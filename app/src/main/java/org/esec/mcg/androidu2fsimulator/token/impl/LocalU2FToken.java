@@ -116,9 +116,9 @@ public class LocalU2FToken implements U2FToken {
             return new AuthenticationResponse((byte)0x01, counter, signature);
         } else if (control == AuthenticationRequest.CHECK_ONLY) {
             boolean keyHandlePresence = keyHandleGenerator.checkKeyHandle(keyHandle);
-            if (keyHandlePresence) {
+            if (keyHandlePresence) { // Reg: key handle had been registered
                 throw new U2FTokenException(U2FTokenActivity.TEST_OF_PRESENCE_REQUIRED);
-            } else {
+            } else { // Reg: not found key handle
                 throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
             }
         } else {

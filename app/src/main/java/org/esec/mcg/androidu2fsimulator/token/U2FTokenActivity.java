@@ -24,8 +24,8 @@ public class U2FTokenActivity extends AppCompatActivity {
 
     public static final String TEST_OF_PRESENCE_REQUIRED = "error:test-of-user-presence-required";
     public static final String INVALID_KEY_HANDLE = "error:bad-key-handle";
-    public static final byte[] SW_TEST_OF_PRESENCE_REQUIRED = {0x69, (byte)0x85};
-    public static final byte[] SW_INVALID_KEY_HANDLE = {0x6a, (byte)0x80};
+    public static final int SW_TEST_OF_PRESENCE_REQUIRED = 0x6985;
+    public static final int SW_INVALID_KEY_HANDLE = 0x6a80;
 
     private String u2fTokenIntentType;
     private byte[] rawMessage;
@@ -90,11 +90,12 @@ public class U2FTokenActivity extends AppCompatActivity {
                 finish();
             } catch (U2FTokenException e) {
                 // TODO: 2016/3/10 How to handle the exception?
-                USER_PRESENCE = false;
-                setResult(RESULT_CANCELED);
-                finish();
-                e.printStackTrace();
-                return;
+                throw new RuntimeException("this should not happen.");
+//                USER_PRESENCE = false;
+//                setResult(RESULT_CANCELED);
+//                finish();
+//                e.printStackTrace();
+//                return;
             }
         } else if (u2fTokenIntentType.equals(U2FTokenIntentType.U2F_OPERATION_SIGN.name())) { // sign
             try {
@@ -111,12 +112,14 @@ public class U2FTokenActivity extends AppCompatActivity {
                 Bundle data = new Bundle();
                 Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                 if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) {
-                    data.putByteArray(TEST_OF_PRESENCE_REQUIRED, SW_TEST_OF_PRESENCE_REQUIRED);
-                    i.putExtras(data);
+//                    data.putByteArray(TEST_OF_PRESENCE_REQUIRED, SW_TEST_OF_PRESENCE_REQUIRED);
+//                    i.putExtras(data);
+                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                     setResult(RESULT_CANCELED, i);
                 } else if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
-                    data.putByteArray(INVALID_KEY_HANDLE, SW_INVALID_KEY_HANDLE);
-                    i.putExtras(data);
+//                    data.putByteArray(INVALID_KEY_HANDLE, SW_INVALID_KEY_HANDLE);
+//                    i.putExtras(data);
+                    i.putExtra("SW", SW_INVALID_KEY_HANDLE);
                     setResult(RESULT_CANCELED, i);
                 } else {
                     setResult(RESULT_CANCELED);
@@ -170,10 +173,23 @@ public class U2FTokenActivity extends AppCompatActivity {
                         Log.i("Nfc-Query:", mbundle.getString("data"));
                         USER_PRESENCE = true;
 
-                    } else if (mbundle.getInt("code") == REAULT_ERROR_CODE)
+                    } else if (mbundle.getInt("code") == REAULT_ERROR_CODE) {
                         Toast.makeText(this, " 余额查询失败", Toast.LENGTH_SHORT).show();
-                    else if (mbundle.getInt("code") == REAULT_CANCEL_CODE)
+                        Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                        i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
+                        setResult(RESULT_CANCELED, i);
+                        USER_PRESENCE = false;
+                        finish();
+                    }
+                    else if (mbundle.getInt("code") == REAULT_CANCEL_CODE) {
                         Toast.makeText(this, " 余额查询已取消", Toast.LENGTH_SHORT).show();
+                        Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                        i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
+                        setResult(RESULT_CANCELED, i);
+                        USER_PRESENCE = false;
+                        finish();
+                    }
+
 
                 }
 
