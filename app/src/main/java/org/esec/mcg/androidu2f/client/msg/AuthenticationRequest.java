@@ -1,22 +1,19 @@
-package org.esec.mcg.androidu2fsimulator.token.msg;
+package org.esec.mcg.androidu2f.client.msg;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Created by yz on 2016/3/7.
  */
 public class AuthenticationRequest implements Parcelable {
-    public static final byte CHECK_ONLY = 0x07;
-    public static final byte USER_PRESENCE_SIGN = 0x03;
+//    public static final byte CHECK_ONLY = 0x07;
+//    public static final byte USER_PRESENCE_SIGN = 0x03;
 
-    private final byte control;
-    private byte[] challengeSha256;
-    private byte[] applicationSha256;
-    private byte[] keyHandle;
+    public byte control;
+    public byte[] challengeSha256;
+    public byte[] applicationSha256;
+    public byte[] keyHandle;
 
     public AuthenticationRequest(byte control, byte[] challengeSha256, byte[] applicationSha256,
                                  byte[] keyHandle) {
@@ -24,6 +21,13 @@ public class AuthenticationRequest implements Parcelable {
         this.challengeSha256 = challengeSha256;
         this.applicationSha256 = applicationSha256;
         this.keyHandle = keyHandle;
+    }
+
+    private AuthenticationRequest(Parcel source) {
+        control = source.readByte();
+        source.readByteArray(challengeSha256);
+        source.readByteArray(applicationSha256);
+        source.readByteArray(keyHandle);
     }
 
     /** The FIDO Client will set the control byte to one of the following values:
@@ -58,28 +62,28 @@ public class AuthenticationRequest implements Parcelable {
         return keyHandle;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(control, challengeSha256, applicationSha256, keyHandle);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        AuthenticationRequest other = (AuthenticationRequest) obj;
-        return Objects.equals(control, other.control)
-                && Arrays.equals(challengeSha256, other.challengeSha256)
-                && Arrays.equals(applicationSha256, other.applicationSha256)
-                && Arrays.equals(keyHandle, other.keyHandle);
-    }
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(control, challengeSha256, applicationSha256, keyHandle);
+//    }
+//
+//    @Override
+//    public boolean equals(Object obj) {
+//        if (this == obj) {
+//            return true;
+//        }
+//        if (obj == null) {
+//            return false;
+//        }
+//        if (getClass() != obj.getClass()) {
+//            return false;
+//        }
+//        AuthenticationRequest other = (AuthenticationRequest) obj;
+//        return Objects.equals(control, other.control)
+//                && Arrays.equals(challengeSha256, other.challengeSha256)
+//                && Arrays.equals(applicationSha256, other.applicationSha256)
+//                && Arrays.equals(keyHandle, other.keyHandle);
+//    }
 
     @Override
     public int describeContents() {
@@ -89,18 +93,12 @@ public class AuthenticationRequest implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeByte(control);
-
-        dest.writeInt(challengeSha256.length);
         dest.writeByteArray(challengeSha256);
-
-        dest.writeInt(applicationSha256.length);
         dest.writeByteArray(applicationSha256);
-//
-        dest.writeInt(keyHandle.length);
         dest.writeByteArray(keyHandle);
     }
 
-    public static final Parcelable.Creator<AuthenticationRequest> CREATOR = new Parcelable.Creator<AuthenticationRequest>() {
+    public static Creator<AuthenticationRequest> CREATOR = new Creator<AuthenticationRequest>() {
 
         @Override
         public AuthenticationRequest createFromParcel(Parcel source) {
@@ -111,19 +109,5 @@ public class AuthenticationRequest implements Parcelable {
         public AuthenticationRequest[] newArray(int size) {
             return new AuthenticationRequest[size];
         }
-
     };
-
-    private AuthenticationRequest(Parcel source) {
-        control = source.readByte();
-
-        challengeSha256 = new byte[source.readInt()];
-        source.readByteArray(challengeSha256);
-
-        applicationSha256 = new byte[source.readInt()];
-        source.readByteArray(applicationSha256);
-//
-        keyHandle = new byte[source.readInt()];
-        source.readByteArray(keyHandle);
-    }
 }
