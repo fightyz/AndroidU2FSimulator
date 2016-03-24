@@ -53,13 +53,27 @@ public class U2FTokenActivity extends AppCompatActivity {
                 }
                 LogUtils.d(signBatch[0].getApplicationSha256());
             }
-        } else if (getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name()) != null) {
+            rawMessage = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()).getByteArray("RawMessage");
+        }
+        else if (getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name()) != null) {
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_REG.name();
             rawMessage = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name()).getByteArray("RawMessage");
-        } else if (getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN.name()) != null) {
+        }
+        else if (getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN.name()) != null) {
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN.name();
-            rawMessage = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN.name()).getByteArray("RawMessage");
-        } else {
+            Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
+            Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
+            if (allParcelables != null) {
+                LogUtils.d(allParcelables.length);
+                LogUtils.d("===================");
+                signBatch = new AuthenticationRequest[allParcelables.length];
+                for (int i = 0; i < allParcelables.length; i++) {
+                    signBatch[i] = (AuthenticationRequest)allParcelables[i];
+                }
+                LogUtils.d(signBatch[0].getApplicationSha256());
+            }
+        }
+        else {
             throw new RuntimeException("Illegal intent");
         }
     }
@@ -149,12 +163,25 @@ public class U2FTokenActivity extends AppCompatActivity {
                     AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
                     LogUtils.d("signBatchIndex = " + signBatchIndex + "\t length = " + signBatch.length);
 
+                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                    Bundle data = new Bundle();
+                    data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
+                    i.putExtras(data);
+                    setResult(RESULT_OK, i);
+                    finish();
+                    USER_PRESENCE = false;
+                    return;
                 }
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                i.putExtra("SW", SW_INVALID_KEY_HANDLE);
-                setResult(RESULT_CANCELED, i);
-                LogUtils.d(INVALID_KEY_HANDLE);
-                finish();
+                if (rawMessage == null) {
+                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                    i.putExtra("SW", SW_INVALID_KEY_HANDLE);
+                    setResult(RESULT_CANCELED, i);
+                    LogUtils.d(SW_INVALID_KEY_HANDLE);
+                    finish();
+                    return;
+                }
+                u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_REG.name();
+                localProceed();
             } catch (U2FTokenException e) {
                 Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                 if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) {
@@ -166,6 +193,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                     signBatchIndex++;
                     localProceed();
                 } else {
+                    e.printStackTrace();
                     setResult(RESULT_CANCELED);
                     finish();
                 }

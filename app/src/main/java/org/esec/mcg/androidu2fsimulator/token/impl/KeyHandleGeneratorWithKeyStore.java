@@ -6,6 +6,7 @@ import android.security.keystore.KeyProperties;
 import android.util.Base64;
 
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
+import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 
 import java.io.IOException;
@@ -179,7 +180,7 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
             if (keyStore.containsAlias(keyHandleString)) {
                 return (PrivateKey)keyStore.getKey(keyHandleString, null);
             } else {
-                throw new U2FTokenException("Can not find user key");
+                throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
             }
 
         } catch (KeyStoreException e) {
