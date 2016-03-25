@@ -67,20 +67,6 @@ public class U2FTokenActivity extends AppCompatActivity {
                 }
             }
         }
-        else if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN.name()) != null) {
-            u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN;
-            Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
-            Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
-            if (allParcelables != null) {
-                LogUtils.d(allParcelables.length);
-                LogUtils.d("===================");
-                signBatch = new AuthenticationRequest[allParcelables.length];
-                for (int i = 0; i < allParcelables.length; i++) {
-                    signBatch[i] = (AuthenticationRequest)allParcelables[i];
-                }
-                LogUtils.d(signBatch[0].getApplicationSha256());
-            }
-        }
         else {
             throw new RuntimeException("Illegal intent");
         }
@@ -97,13 +83,8 @@ public class U2FTokenActivity extends AppCompatActivity {
                 break;
             case U2F_OPERATION_SIGN_BATCH:
                 sign();
+                break;
         }
-
-//        if (USER_PRESENCE) {
-//            localProceed();
-//            return;
-//        }
-//        userPresenceVerifier();
     }
 
     private void register() {
@@ -220,101 +201,6 @@ public class U2FTokenActivity extends AppCompatActivity {
         WepayPlugin.getInstance().genWepayQueryRequestJar(this, jsonm.toString(), true);
     }
 
-    /**
-     * Token simulator
-     */
-    public void localProceed() {
-        u2fToken = new LocalU2FToken(this);
-        if (U2FTokenIntentType.U2F_OPERATION_REG.name().equals(u2fTokenIntentType)) { // register
-            try {
-                RegistrationRequest registrationRequest = RawMessageCodec.decodeRegistrationRequest(rawMessage);
-                RegistrationResponse registrationResponse = u2fToken.register(registrationRequest);
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                Bundle data = new Bundle();
-                data.putByteArray("RawMessage", RawMessageCodec.encodeRegistrationResponse(registrationResponse));
-                i.putExtras(data);
-                setResult(RESULT_OK, i);
-                finish();
-                USER_PRESENCE = false;
-            } catch (U2FTokenException e) {
-                // TODO: 2016/3/10 How to handle the exception?
-                throw new RuntimeException("this should not happen.");
-            }
-        } else if (U2FTokenIntentType.U2F_OPERATION_SIGN.name().equals(u2fTokenIntentType)) { // sign
-            try {
-                AuthenticationRequest authenticationRequest = RawMessageCodec.decodeAuthenticationRequest(rawMessage);
-                AuthenticationResponse authenticationResponse = u2fToken.authenticate(authenticationRequest);
-
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                Bundle data = new Bundle();
-                data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
-                i.putExtras(data);
-                setResult(RESULT_OK, i);
-                finish();
-                USER_PRESENCE = false;
-            } catch (U2FTokenException e) {
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) {
-                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
-                    setResult(RESULT_CANCELED, i);
-                } else if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
-                    i.putExtra("SW", SW_INVALID_KEY_HANDLE);
-                    setResult(RESULT_CANCELED, i);
-                } else {
-                    setResult(RESULT_CANCELED);
-                }
-                finish();
-                e.printStackTrace();
-            }
-        } else if (U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name().equals(u2fTokenIntentType)) { // check only
-            try {
-                LogUtils.d("check only");
-                LogUtils.d("signBatchIndex = " + signBatchIndex + "\t length = " + signBatch.length);
-                for (;signBatchIndex < signBatch.length; ) {
-                    LogUtils.d("for cycle");
-                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
-                    LogUtils.d("signBatchIndex = " + signBatchIndex + "\t length = " + signBatch.length);
-
-                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                    Bundle data = new Bundle();
-                    data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
-                    i.putExtras(data);
-                    setResult(RESULT_OK, i);
-                    finish();
-                    USER_PRESENCE = false;
-                    return;
-                }
-                if (rawMessage == null) {
-                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                    i.putExtra("SW", SW_INVALID_KEY_HANDLE);
-                    setResult(RESULT_CANCELED, i);
-                    LogUtils.d(SW_INVALID_KEY_HANDLE);
-                    finish();
-                    return;
-                }
-                u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_REG;
-                localProceed();
-            } catch (U2FTokenException e) {
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) {
-                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
-                    setResult(RESULT_CANCELED, i);
-                    LogUtils.d(TEST_OF_PRESENCE_REQUIRED);
-                    finish();
-                } else if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
-                    signBatchIndex++;
-                    localProceed();
-                } else {
-                    e.printStackTrace();
-                    setResult(RESULT_CANCELED);
-                    finish();
-                }
-            }
-        } else {
-            throw new RuntimeException("never happen!!");
-        }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -404,10 +290,6 @@ public class U2FTokenActivity extends AppCompatActivity {
                 Toast.makeText(this, "出错啦", Toast.LENGTH_SHORT).show();
             }
         }
-
-//        if (USER_PRESENCE) {
-//            localProceed();
-//        }
     }
 
     /**
