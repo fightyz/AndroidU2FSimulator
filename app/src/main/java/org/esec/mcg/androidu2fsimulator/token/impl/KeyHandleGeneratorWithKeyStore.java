@@ -8,6 +8,8 @@ import android.util.Base64;
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
+import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
+import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,58 +39,11 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
     private Cipher mCipher;
     private KeyPair mPair;
 
-//    public KeyHandleGeneratorWithKeyStore(Context context, String alias)
-//            throws GeneralSecurityException, IOException {
-//        mCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-//
-//        final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-//        keyStore.load(null);
-//
-//        if (!keyStore.containsAlias(alias)) {
-//            generateKeyPair(context, alias);
-//        }
-//
-//        // Even if we just generated the key, always read it back to ensure we
-//        // can read it successfully.
-//        final KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
-//                alias, null);
-//        mPair = new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey());
-//    }
-
     private static void generateKeyPair(Context context, String alias)
             throws GeneralSecurityException {
         final Calendar start = new GregorianCalendar();
         final Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, 100);
-
-//        Android 6.0
-//        final KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(context)
-//                .setAlias(alias)
-//                .
-//        final KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(context)
-//                .setAlias(alias)
-//                .setSubject(new X500Principal("CN=" + alias))
-//                .setSerialNumber(BigInteger.ONE)
-//                .setStartDate(start.getTime())
-//                .setEndDate(end.getTime())
-//                .build();
-//
-//        final java.security.KeyPairGenerator gen = java.security.KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
-//        gen.initialize(spec);
-//        gen.generateKeyPair();
-
-//        java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance(
-//                KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
-//        kpg.initialize(new KeyGenParameterSpec.Builder(
-//                alias,
-//                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-//                .setDigests(KeyProperties.DIGEST_SHA256,
-//                        KeyProperties.DIGEST_SHA512)
-//                .build());
-//
-//        KeyPair kp = kpg.generateKeyPair();
-
-//        java.security.KeyPairGenerator keyPairGenerator = java.security.KeyPairGenerator.getInstance()
     }
 
     /**
@@ -134,14 +89,15 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
         byte[] keyHandle = new byte[applicationSha256.length + challengeSha256.length];
         ByteBuffer.wrap(keyHandle).put(applicationSha256).put(challengeSha256);
         String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
-
+        LogUtils.d("generateKeyHandle key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
         try {
             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             if (keyStore.containsAlias(keyHandleString)) {
                 //TODO throw exception
 //                throw new U2FException("Key handle already existed.");
-                keyStore.deleteEntry(keyHandleString);
+//                keyStore.deleteEntry(keyHandleString);
+                new RuntimeException("key handle already existed");
             }
 
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
@@ -173,11 +129,13 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
 
     @Override
     public PrivateKey getUserPrivateKey(byte[] keyHandle) throws U2FTokenException {
+
         String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
         try {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             if (keyStore.containsAlias(keyHandleString)) {
+                LogUtils.d("getUserPrivateKey key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
                 return (PrivateKey)keyStore.getKey(keyHandleString, null);
             } else {
                 throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
@@ -199,6 +157,7 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
 
     @Override
     public boolean checkKeyHandle(byte[] keyHandle) throws U2FTokenException {
+        LogUtils.d("check key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
         String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
         final KeyStore keyStore;
         try {

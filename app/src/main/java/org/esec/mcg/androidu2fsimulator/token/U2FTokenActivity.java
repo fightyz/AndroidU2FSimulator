@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -34,18 +35,22 @@ public class U2FTokenActivity extends AppCompatActivity {
     private int signBatchIndex;
 
     private U2FToken u2fToken;
-    private static boolean USER_PRESENCE = false;
+//    private static boolean USER_PRESENCE = false;
+
+    private static boolean USER_PRESENCE = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        USER_PRESENCE = false;
+//        USER_PRESENCE = false;
+        USER_PRESENCE = true;
 
         u2fToken = new LocalU2FToken(this);
         Intent intent = getIntent();
         Bundle data;
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
+            LogUtils.d("this is signBatch");
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH;
             Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
             Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
@@ -57,6 +62,7 @@ public class U2FTokenActivity extends AppCompatActivity {
             }
         }
         else if ((data = intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name())) != null) {
+            LogUtils.d("this is reg");
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_REG;
             rawMessage = data.getByteArray("RawMessage");
             Parcelable[] allParcelables = data.getParcelableArray("signBatch");
@@ -116,9 +122,10 @@ public class U2FTokenActivity extends AppCompatActivity {
                 }
             }
         } else { // do register
-            userPresenceVerifier();
+
             try {
                 if (USER_PRESENCE = false) {
+                    userPresenceVerifier();
                     Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                     i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                     setResult(RESULT_CANCELED, i);
@@ -149,7 +156,7 @@ public class U2FTokenActivity extends AppCompatActivity {
 
         if (signBatch != null && USER_PRESENCE) {
             try {
-                for (;signBatchIndex < signBatch.length; ) {
+                if (signBatchIndex < signBatch.length) {
                     LogUtils.d("for cycle");
                     LogUtils.d(signBatchIndex);
                     AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
@@ -157,6 +164,8 @@ public class U2FTokenActivity extends AppCompatActivity {
                     Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                     Bundle data = new Bundle();
                     data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
+//                    data.putInt("keyHandleIndex", signBatchIndex);
+                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.NO_WRAP | Base64.URL_SAFE));
                     i.putExtras(data);
                     setResult(RESULT_OK, i);
                     finish();

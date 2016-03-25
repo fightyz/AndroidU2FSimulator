@@ -18,6 +18,8 @@ import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RawMessageCodec;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
+import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
+import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.spongycastle.asn1.ASN1Sequence;
 import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
 
@@ -99,7 +101,8 @@ public class LocalU2FToken implements U2FToken {
         byte control = authenticationRequest.getControl();
 
         if (control == AuthenticationRequest.USER_PRESENCE_SIGN) {
-            Log.d("key Handle", Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10));
+            LogUtils.d("authenticate key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
+            LogUtils.d("key Handle", Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10));
             PrivateKey privateKey = keyHandleGenerator.getUserPrivateKey(keyHandle);
 
             // TODO: 2016/3/8 counter should be stored safely
