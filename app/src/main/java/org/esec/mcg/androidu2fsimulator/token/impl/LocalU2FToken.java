@@ -22,8 +22,11 @@ import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.spongycastle.asn1.ASN1Sequence;
 import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +34,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.X509EncodedKeySpec;
 
 /**
  * Created by yz on 2016/1/14.
@@ -52,7 +56,7 @@ public class LocalU2FToken implements U2FToken {
         certificatePrivateKey = AttestationCertificate.getAttestationPrivateKey();
         keyPairGenerator = new SCSecp256r1();
 
-        keyHandleGenerator = new KeyHandleGeneratorWithKeyStore();
+        keyHandleGenerator = new KeyHandleGeneratorWithSC();
         dataStore = null;
         userPresenceVerifier = null;
         crypto = new CryptoECDSA();
@@ -64,26 +68,13 @@ public class LocalU2FToken implements U2FToken {
         byte[] applicationSha256 = registrationRequest.getApplicationSha256();
         byte[] challengeSha256 = registrationRequest.getChallengeSha256();
 
-        byte[] keyHandle = keyHandleGenerator.generateKeyHandle(applicationSha256, challengeSha256);
-        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
-        byte[] userPublicKey;
-        try {
-            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-            keyStore.load(null);
-            PublicKey publicKey = keyStore.getCertificate(keyHandleString).getPublicKey();
-            byte[] userPublicKeyX509 = publicKey.getEncoded(); // this is x.509 encoded, so has 91 bytes.
-            SubjectPublicKeyInfo subjectPublicKeyInfo = new SubjectPublicKeyInfo(ASN1Sequence.getInstance(userPublicKeyX509));
-            userPublicKey = subjectPublicKeyInfo.getPublicKeyData().getBytes();
-        } catch (KeyStoreException e) {
-            throw new U2FTokenException("Local token register error.", e);
-        } catch (CertificateException e) {
-            throw new U2FTokenException("Local token register error.", e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new U2FTokenException("Local token register error.", e);
-        } catch (IOException e) {
-            throw new U2FTokenException("Local token register error.", e);
-        }
+        KeyPair kp = keyHandleGenerator.generateKeyPair();
+        byte[] keyHandle = keyHandleGenerator.generateKeyHandle(applicationSha256, kp.getPrivate());
+        LogUtils.d("keyHanle length: " + keyHandle.length);
+        LogUtils.d("keyHandle: " + ByteUtil.ByteArrayToHexString(keyHandle));
 
+        byte[] userPublicKey = crypto.getPublicKey(kp.getPublic().getEncoded());
+        LogUtils.d("userPublicKey: " + ByteUtil.ByteArrayToHexString(userPublicKey));
         byte[] signedData = RawMessageCodec.encodeRegistrationSignedBytes(applicationSha256, challengeSha256,
                 keyHandle, userPublicKey);
 
@@ -92,6 +83,7 @@ public class LocalU2FToken implements U2FToken {
         byte[] signature = crypto.sign(signedData, certificatePrivateKey);
         return new RegistrationResponse(userPublicKey, keyHandle, attestationCertificate, signature);
     }
+
 
     @Override
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) throws U2FTokenException {
@@ -102,8 +94,7 @@ public class LocalU2FToken implements U2FToken {
 
         if (control == AuthenticationRequest.USER_PRESENCE_SIGN) {
             LogUtils.d("authenticate key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
-            LogUtils.d("key Handle", Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10));
-            PrivateKey privateKey = keyHandleGenerator.getUserPrivateKey(keyHandle);
+            PrivateKey privateKey = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
 
             // TODO: 2016/3/8 counter should be stored safely
             SharedPreferences sharedPreferences = context.getSharedPreferences("org.esec.mcg.android.fido.PREFERENCE_FILE_KEY"

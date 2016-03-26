@@ -42,7 +42,7 @@ public class U2FTokenActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        LogUtils.d("onCreate");
 //        USER_PRESENCE = false;
         USER_PRESENCE = true;
 
@@ -50,7 +50,6 @@ public class U2FTokenActivity extends AppCompatActivity {
         Intent intent = getIntent();
         Bundle data;
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
-            LogUtils.d("this is signBatch");
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH;
             Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
             Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
@@ -58,6 +57,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                 signBatch = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
                     signBatch[i] = (AuthenticationRequest)allParcelables[i];
+                    LogUtils.d("signBatch: " + signBatch[i]);
                 }
             }
         }
@@ -76,12 +76,13 @@ public class U2FTokenActivity extends AppCompatActivity {
         else {
             throw new RuntimeException("Illegal intent");
         }
-        LogUtils.d("onCreate");
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
 
         switch (u2fTokenIntentType) {
             case U2F_OPERATION_REG:
@@ -97,7 +98,7 @@ public class U2FTokenActivity extends AppCompatActivity {
         if (signBatch != null) {
             try {
                 LogUtils.d("check only");
-                for (;signBatchIndex < signBatch.length; ) {
+                if (signBatchIndex < signBatch.length) {
                     LogUtils.d("for cycle");
                     AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
                 }
@@ -157,7 +158,6 @@ public class U2FTokenActivity extends AppCompatActivity {
         if (signBatch != null && USER_PRESENCE) {
             try {
                 if (signBatchIndex < signBatch.length) {
-                    LogUtils.d("for cycle");
                     LogUtils.d(signBatchIndex);
                     AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
 

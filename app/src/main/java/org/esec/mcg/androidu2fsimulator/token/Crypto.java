@@ -7,4 +7,5 @@ import java.security.PrivateKey;
  */
 public interface Crypto {
     byte[] sign(byte[] signedData, PrivateKey certificatePrivateKey) throws U2FTokenException;
+    byte[] getPublicKey(byte[] pubKey);
 }

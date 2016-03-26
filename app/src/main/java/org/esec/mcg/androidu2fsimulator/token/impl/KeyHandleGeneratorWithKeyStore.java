@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -22,6 +23,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.spec.ECGenParameterSpec;
@@ -70,25 +72,23 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
         return (PrivateKey) mCipher.unwrap(blob, "AES", Cipher.PRIVATE_KEY);
     }
 
-    @Override
-    public byte[] generateKeyHandle(byte[] applicationSha256, KeyPair keyPair) {
-        PrivateKey key = keyPair.getPrivate();
 
-        byte[] result = null;
-        try {
-            result = wrap(key);
-            unwrap(result);
-        } catch (GeneralSecurityException e) {
-            e.printStackTrace();
-        }
-        return result;
+
+    @Override
+    public KeyPair generateKeyPair() {
+        return null;
+    }
+
+    @Override
+    public byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk) {
+        return new byte[0];
     }
 
     @Override
     public byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256) throws U2FTokenException{
         byte[] keyHandle = new byte[applicationSha256.length + challengeSha256.length];
         ByteBuffer.wrap(keyHandle).put(applicationSha256).put(challengeSha256);
-        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
+        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10);
         LogUtils.d("generateKeyHandle key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
         try {
             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
@@ -128,9 +128,13 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
     }
 
     @Override
+    public PrivateKey getUserPrivateKey(String keyHandle) throws U2FTokenException {
+        return null;
+    }
+
     public PrivateKey getUserPrivateKey(byte[] keyHandle) throws U2FTokenException {
 
-        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
+        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10);
         try {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
@@ -158,7 +162,7 @@ public class KeyHandleGeneratorWithKeyStore implements KeyHandleGenerator {
     @Override
     public boolean checkKeyHandle(byte[] keyHandle) throws U2FTokenException {
         LogUtils.d("check key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
-        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE);
+        String keyHandleString = Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10);
         final KeyStore keyStore;
         try {
             keyStore = KeyStore.getInstance("AndroidKeyStore");
