@@ -95,7 +95,10 @@ public class LocalU2FToken implements U2FToken {
         if (control == AuthenticationRequest.USER_PRESENCE_SIGN) {
             LogUtils.d("authenticate key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
             PrivateKey privateKey = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
-
+            if (privateKey == null) {
+                throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
+            }
+            LogUtils.d("privateKey: " + ByteUtil.ByteArrayToHexString(privateKey.getEncoded()));
             // TODO: 2016/3/8 counter should be stored safely
             SharedPreferences sharedPreferences = context.getSharedPreferences("org.esec.mcg.android.fido.PREFERENCE_FILE_KEY"
                     .concat(".").concat(Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10)), Context.MODE_PRIVATE);
@@ -109,8 +112,8 @@ public class LocalU2FToken implements U2FToken {
             Log.d("Counter", ""+counter);
             return new AuthenticationResponse((byte)0x01, counter, signature);
         } else if (control == AuthenticationRequest.CHECK_ONLY) {
-            boolean keyHandlePresence = keyHandleGenerator.checkKeyHandle(keyHandle);
-            if (keyHandlePresence) { // Reg: key handle had been registered
+            PrivateKey prk = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
+            if (prk != null) { // Reg: key handle had been registered
                 throw new U2FTokenException(U2FTokenActivity.TEST_OF_PRESENCE_REQUIRED);
             } else { // Reg: not found key handle
                 throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);

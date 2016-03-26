@@ -3,6 +3,8 @@ package org.esec.mcg.androidu2fsimulator.token.impl;
 import android.util.Base64;
 
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
+import org.esec.mcg.androidu2fsimulator.token.U2FToken;
+import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.CharUtil;
@@ -173,30 +175,29 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
             java.security.spec.ECPrivateKeySpec keyspec = new java.security.spec.ECPrivateKeySpec(new BigInteger(Base64.decode(pvk, Base64.URL_SAFE)), paramspec);
             return kf.generatePrivate(keyspec);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            return null;
         } catch (NoSuchProviderException e) {
-            e.printStackTrace();
+            return null;
         } catch (SignatureException e) {
-            e.printStackTrace();
+            return null;
         } catch (ShortBufferException e) {
-            e.printStackTrace();
+            return null;
         } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
+            return null;
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            return null;
         } catch (BadPaddingException e) {
-            e.printStackTrace();
+            return null;
         } catch (InvalidKeyException e) {
-            e.printStackTrace();
+            return null;
         } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
+            return null;
         } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
+            return null;
         } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
+            return null;
         }
 
-        return null;
     }
 
     @Override

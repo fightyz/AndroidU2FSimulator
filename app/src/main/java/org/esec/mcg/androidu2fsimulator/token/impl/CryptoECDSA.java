@@ -3,6 +3,7 @@ package org.esec.mcg.androidu2fsimulator.token.impl;
 import org.esec.mcg.androidu2fsimulator.token.Crypto;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
+import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -22,7 +23,10 @@ import java.security.spec.X509EncodedKeySpec;
 public class CryptoECDSA implements Crypto {
 
     static {
-        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
+        // Add SpongyCastle JCE provider
+        if (Security.getProvider("SC") == null) {
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        }
     }
 
     @Override

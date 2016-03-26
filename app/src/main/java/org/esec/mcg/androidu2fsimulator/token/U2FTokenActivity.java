@@ -35,16 +35,16 @@ public class U2FTokenActivity extends AppCompatActivity {
     private int signBatchIndex;
 
     private U2FToken u2fToken;
-//    private static boolean USER_PRESENCE = false;
+    private static boolean USER_PRESENCE = false;
 
-    private static boolean USER_PRESENCE = true;
+//    private static boolean USER_PRESENCE = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         LogUtils.d("onCreate");
-//        USER_PRESENCE = false;
-        USER_PRESENCE = true;
+        USER_PRESENCE = false;
+//        USER_PRESENCE = true;
 
         u2fToken = new LocalU2FToken(this);
         Intent intent = getIntent();
@@ -165,7 +165,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                     Bundle data = new Bundle();
                     data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
 //                    data.putInt("keyHandleIndex", signBatchIndex);
-                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.NO_WRAP | Base64.URL_SAFE));
+                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
                     i.putExtras(data);
                     setResult(RESULT_OK, i);
                     finish();

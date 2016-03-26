@@ -54,17 +54,24 @@ public class RawMessageCodec {
                                                          int counter,
                                                          byte[] challengeSha256) {
         byte[] signedData = new byte[applicationSha256.length + 1 + 4 + challengeSha256.length];
-        byte[] rawCounter = new byte[4];
-        rawCounter[0] = (byte)((counter >> 24) & 0xff);
-        rawCounter[1] = (byte)((counter >> 16) & 0xff);
-        rawCounter[2] = (byte)((counter >> 8) & 0xff);
-        rawCounter[3] = (byte)((counter) & 0xff);
+        byte[] rawCounter = ByteBuffer.allocate(4).putInt(counter).array();
 
-        ByteBuffer.wrap(signedData)
-                .put(applicationSha256)
-                .put(userPresence)
-                .put(rawCounter)
-                .put(challengeSha256);
+//        ByteBuffer.wrap(signedData)
+//                .put(applicationSha256)
+//                .put(userPresence)
+//                .put(rawCounter)
+//                .put(challengeSha256);
+        int cur = 0;
+        System.arraycopy(applicationSha256, 0, signedData, cur, applicationSha256.length);
+        cur += applicationSha256.length;
+
+        signedData[cur++] = userPresence;
+
+        System.arraycopy(rawCounter, 0, signedData, cur, 4);
+        cur += 4;
+
+        System.arraycopy(challengeSha256, 0, signedData, cur, challengeSha256.length);
+
         return signedData;
     }
 
@@ -125,11 +132,12 @@ public class RawMessageCodec {
         byte userPresence = authenticationResponse.getUserPresence();
         int counter = authenticationResponse.getCounter();
         byte[] signature = authenticationResponse.getSignature();
+        byte[] rawCounter = ByteBuffer.allocate(4).putInt(counter).array();
 
         byte[] result = new byte[1 + 4 + signature.length];
         ByteBuffer.wrap(result)
                 .put(userPresence)
-                .putInt(counter)
+                .put(rawCounter)
                 .put(signature);
         return result;
     }
