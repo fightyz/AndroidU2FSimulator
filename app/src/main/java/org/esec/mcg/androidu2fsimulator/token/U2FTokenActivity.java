@@ -2,6 +2,7 @@ package org.esec.mcg.androidu2fsimulator.token;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
@@ -30,8 +31,8 @@ public class U2FTokenActivity extends AppCompatActivity {
     public static final int SW_INVALID_KEY_HANDLE = 0x6a80;
 
     private U2FTokenIntentType u2fTokenIntentType;
-    private byte[] rawMessage;
     private AuthenticationRequest[] signBatch;
+    private RegistrationRequest registrationRequest;
     private int signBatchIndex;
 
     private U2FToken u2fToken;
@@ -64,17 +65,22 @@ public class U2FTokenActivity extends AppCompatActivity {
         else if ((data = intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name())) != null) {
             LogUtils.d("this is reg");
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_REG;
-            rawMessage = data.getByteArray("RawMessage");
+            data.setClassLoader(RegistrationRequest.class.getClassLoader());
+            registrationRequest = data.getParcelable("registerRequest");
+            LogUtils.d(registrationRequest);
+//            rawMessage = data.getByteArray("RawMessage");
             Parcelable[] allParcelables = data.getParcelableArray("signBatch");
             if (allParcelables != null) {
                 signBatch = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
                     signBatch[i] = (AuthenticationRequest)allParcelables[i];
                 }
+            } else {
+                LogUtils.d("signBatch is null");
             }
         }
         else {
-            // TODO: 2016/3/28 erroe message layout 
+            // TODO: 2016/3/28 erroe message layout
             throw new RuntimeException("Illegal intent");
         }
 
@@ -128,14 +134,8 @@ public class U2FTokenActivity extends AppCompatActivity {
             try {
                 if (USER_PRESENCE == false) {
                     userPresenceVerifier();
-                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
-                    setResult(RESULT_CANCELED, i);
-                    LogUtils.d(TEST_OF_PRESENCE_REQUIRED);
-                    finish();
                     return;
                 }
-                RegistrationRequest registrationRequest = RawMessageCodec.decodeRegistrationRequest(rawMessage);
                 RegistrationResponse registrationResponse = u2fToken.register(registrationRequest);
                 Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                 Bundle data = new Bundle();
@@ -253,6 +253,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                         Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                         i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                         setResult(RESULT_CANCELED, i);
+                        LogUtils.d("余额查询失败");
                         USER_PRESENCE = false;
                         finish();
                     }
@@ -261,6 +262,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                         Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                         i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                         setResult(RESULT_CANCELED, i);
+                        LogUtils.d("余额查询失败");
                         USER_PRESENCE = false;
                         finish();
                     }

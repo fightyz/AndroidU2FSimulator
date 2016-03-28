@@ -6,6 +6,7 @@ import android.os.Parcelable;
 import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Created by yz on 2016/3/7.
@@ -26,7 +27,6 @@ public class AuthenticationRequest implements Parcelable {
         this.applicationSha256 = applicationSha256;
         this.keyHandle = keyHandle;
     }
-
 
     @Override
     public String toString() {
@@ -83,28 +83,28 @@ public class AuthenticationRequest implements Parcelable {
         return keyHandle;
     }
 
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(control, challengeSha256, applicationSha256, keyHandle);
-//    }
-//
-//    @Override
-//    public boolean equals(Object obj) {
-//        if (this == obj) {
-//            return true;
-//        }
-//        if (obj == null) {
-//            return false;
-//        }
-//        if (getClass() != obj.getClass()) {
-//            return false;
-//        }
-//        AuthenticationRequest other = (AuthenticationRequest) obj;
-//        return Objects.equals(control, other.control)
-//                && Arrays.equals(challengeSha256, other.challengeSha256)
-//                && Arrays.equals(applicationSha256, other.applicationSha256)
-//                && Arrays.equals(keyHandle, other.keyHandle);
-//    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(control, challengeSha256, applicationSha256, keyHandle);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        AuthenticationRequest other = (AuthenticationRequest) obj;
+        return Objects.equals(control, other.control)
+                && Arrays.equals(challengeSha256, other.challengeSha256)
+                && Arrays.equals(applicationSha256, other.applicationSha256)
+                && Arrays.equals(keyHandle, other.keyHandle);
+    }
 
     @Override
     public int describeContents() {

@@ -1,37 +1,26 @@
 package org.esec.mcg.androidu2fsimulator.token.msg;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
+import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
+
 import java.util.Arrays;
 
 /**
  * Byte array of challengeSha256 and applicationSha256
  * Created by yz on 2016/1/14.
  */
-public class RegistrationRequest {
-    private final byte[] challengeSha256;
-    private final byte[] applicationSha256;
+public final class RegistrationRequest extends BaseRequest implements Parcelable {
 
     public RegistrationRequest(byte[] applicationSha256, byte[] challengeSha256) {
-        this.challengeSha256 = challengeSha256;
-        this.applicationSha256 = applicationSha256;
+        super(challengeSha256, applicationSha256);
     }
 
-    /**
-     * The challenge parameter is the SHA-256 hash of the Client Data, a
-     * stringified JSON datastructure that the FIDO Client prepares. Among other
-     * things, the Client Data contains the challenge from the relying party
-     * (hence the name of the parameter). See below for a detailed explanation of
-     * Client Data.
-     */
-    public byte[] getChallengeSha256() {
-        return challengeSha256;
-    }
-
-    /**
-     * The application parameter is the SHA-256 hash of the application identity
-     * of the application requesting the registration
-     */
-    public byte[] getApplicationSha256() {
-        return applicationSha256;
+    private RegistrationRequest(Parcel source) {
+        challengeSha256 = source.createByteArray();
+        applicationSha256 = source.createByteArray();
     }
 
     @Override
@@ -57,5 +46,43 @@ public class RegistrationRequest {
         if (!Arrays.equals(challengeSha256, other.challengeSha256))
             return false;
         return true;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeByteArray(challengeSha256);
+
+        dest.writeByteArray(applicationSha256);
+    }
+
+    public static final ClassLoaderCreator<RegistrationRequest> CREATOR = new ClassLoaderCreator<RegistrationRequest>() {
+        @Override
+        public RegistrationRequest createFromParcel(Parcel source, ClassLoader loader) {
+            LogUtils.d("I'm here!!");
+            return new RegistrationRequest(source);
+        }
+
+        @Override
+        public RegistrationRequest createFromParcel(Parcel source) {
+            return createFromParcel(source, null);
+        }
+
+        @Override
+        public RegistrationRequest[] newArray(int size) {
+            return new RegistrationRequest[size];
+        }
+    };
+
+    @Override
+    public String toString() {
+        return "AuthenticationRequest{" +
+                "applicationSha256=" + ByteUtil.ByteArrayToHexString(applicationSha256) +
+                ", challengeSha256=" + ByteUtil.ByteArrayToHexString(challengeSha256) +
+                '}';
     }
 }
