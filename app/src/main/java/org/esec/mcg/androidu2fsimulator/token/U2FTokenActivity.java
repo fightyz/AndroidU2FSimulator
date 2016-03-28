@@ -74,6 +74,7 @@ public class U2FTokenActivity extends AppCompatActivity {
             }
         }
         else {
+            // TODO: 2016/3/28 erroe message layout 
             throw new RuntimeException("Illegal intent");
         }
 
@@ -125,7 +126,7 @@ public class U2FTokenActivity extends AppCompatActivity {
         } else { // do register
 
             try {
-                if (USER_PRESENCE = false) {
+                if (USER_PRESENCE == false) {
                     userPresenceVerifier();
                     Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                     i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
@@ -164,8 +165,9 @@ public class U2FTokenActivity extends AppCompatActivity {
                     Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
                     Bundle data = new Bundle();
                     data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
-//                    data.putInt("keyHandleIndex", signBatchIndex);
-                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
+                    data.putInt("keyHandleIndex", signBatchIndex);
+//                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
+
                     i.putExtras(data);
                     setResult(RESULT_OK, i);
                     finish();
