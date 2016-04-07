@@ -1,6 +1,7 @@
 package org.esec.mcg.androidu2fsimulator.token;
 
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
+import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.BaseResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.ErrorResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
@@ -58,7 +59,7 @@ public class TokenMessageRequest implements Runnable{
                 register();
                 break;
             case U2F_OPERATION_SIGN_BATCH:
-//                sign();
+                sign();
                 break;
             default:
                 break;
@@ -66,7 +67,6 @@ public class TokenMessageRequest implements Runnable{
     }
 
     private void register() {
-
         if (authenticationRequests != null) {
             for (int index = 0; index < authenticationRequests.length; index++) {
                 ErrorResponse response = (ErrorResponse)u2fToken.authenticate(authenticationRequests[index]);
@@ -76,7 +76,6 @@ public class TokenMessageRequest implements Runnable{
                     }
                     continue;
                 }
-
                 else if (response.getErrorCode() == U2FTokenActivity.SW_TEST_OF_PRESENCE_REQUIRED) { // Token already has been registered
                     responseHandler.onCheckOnlyFinish();
                     return;
@@ -84,17 +83,34 @@ public class TokenMessageRequest implements Runnable{
             }
         }
 
-        if (u2fToken == null) {
-            LogUtils.e("u2fToken is null?");
-        }
         RegistrationResponse response = (RegistrationResponse)u2fToken.register(registrationRequest);
 
         if (isCancelled()) {
             return;
         }
-
         responseHandler.onRegisterFinish(response);
+        isFinished = true;
+    }
 
+    private void sign() {
+        for (int index = 0; index < authenticationRequests.length; index++) {
+            BaseResponse response = u2fToken.authenticate(authenticationRequests[index]);
+            if (response instanceof ErrorResponse) {
+                ErrorResponse _response = (ErrorResponse)response;
+                if (_response.getErrorCode() == U2FTokenActivity.SW_INVALID_KEY_HANDLE) {
+                    if (isCancelled()) {
+                        return;
+                    }
+                    continue;
+                }
+            } else if (response instanceof AuthenticationResponse) {
+                AuthenticationResponse _response = (AuthenticationResponse)response;
+                responseHandler.onAuthenticateFinish(_response, index);
+                return;
+            }
+        }
+
+        responseHandler.onAuthenticateFail();
         isFinished = true;
     }
 

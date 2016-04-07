@@ -2,6 +2,7 @@ package org.esec.mcg.androidu2fsimulator.token;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
@@ -53,9 +54,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
 //        USER_PRESENCE = true;
         responseHandler = new ResponseHandler(this);
         u2fToken = new LocalU2FToken(this);
-        if (u2fToken == null) {
-            LogUtils.e("u2fToken is null?");
-        }
         Intent intent = getIntent();
         Bundle data;
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
@@ -99,9 +97,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
     @Override
     protected void onResume() {
         super.onResume();
-        if (u2fToken == null) {
-            LogUtils.e("u2fToken is null?");
-        }
         TokenMessageRequest request = new TokenMessageRequest(registrationRequest,
                 signBatch, u2fTokenIntentType, u2fToken, responseHandler);
 
@@ -405,8 +400,41 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
         }
 
         @Override
+        public void onAuthenticateFinish(AuthenticationResponse response, int index) {
+            LogUtils.d("onAuthenticateFinish");
+            final U2FTokenActivity _activity = activity.get();
+            if (_activity != null) {
+                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                Bundle data = new Bundle();
+                data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(response));
+                data.putInt("keyHandleIndex", index);
+                i.putExtras(data);
+                _activity.setResult(RESULT_OK, i);
+                _activity.finish();
+                USER_PRESENCE = false;
+                return;
+            }
+        }
+
+        @Override
+        public void onAuthenticateFail() {
+            LogUtils.d("onAuthenticateFail");
+            final U2FTokenActivity _activity = activity.get();
+            if (_activity != null) {
+                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                i.putExtra("SW", SW_INVALID_KEY_HANDLE);
+                _activity.setResult(RESULT_CANCELED, i);
+                _activity.finish();
+            }
+        }
+
+        @Override
         public void sendCancelMessage() {
             LogUtils.d("sendCancelMessage");
+//            final U2FTokenActivity _activity = activity.get();
+//            if (_activity != null) {
+//                Toast.makeText(_activity, "You cancelled token task.", Toast.LENGTH_LONG).show();
+//            }
         }
     }
 }
