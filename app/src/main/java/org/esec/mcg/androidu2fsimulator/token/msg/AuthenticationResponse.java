@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Created by yz on 2016/3/8.
  */
-public class AuthenticationResponse {
+public class AuthenticationResponse implements BaseResponse {
     private final byte userPresence;
     private final int counter;
     private final byte[] signature;

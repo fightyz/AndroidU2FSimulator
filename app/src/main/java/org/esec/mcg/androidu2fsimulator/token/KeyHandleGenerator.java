@@ -17,7 +17,7 @@ import java.security.cert.CertificateException;
 public interface KeyHandleGenerator {
     KeyPair generateKeyPair();
     byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk);
-    byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256) throws U2FTokenException;
-    PrivateKey getUserPrivateKey(String keyHandle) throws U2FTokenException;
+    byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256);
+    PrivateKey getUserPrivateKey(String keyHandle);
     boolean checkKeyHandle(byte[] keyHandle) throws U2FTokenException;
 }

@@ -6,7 +6,7 @@ import java.util.Arrays;
 /**
  * Created by yz on 2016/1/14.
  */
-public class RegistrationResponse {
+public class RegistrationResponse implements BaseResponse {
     private final byte[] userPublicKey;
     private final byte[] keyHandle;
     private final X509Certificate attestationCertificate;
@@ -14,7 +14,6 @@ public class RegistrationResponse {
 
     public RegistrationResponse(byte[] userPublicKey, byte[] keyHandle,
                                 X509Certificate attestationCertificate, byte[] signature) {
-        super();
         this.userPublicKey = userPublicKey;
         this.keyHandle = keyHandle;
         this.attestationCertificate = attestationCertificate;

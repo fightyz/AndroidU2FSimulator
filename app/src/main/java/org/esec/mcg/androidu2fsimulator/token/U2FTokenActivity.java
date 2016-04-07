@@ -14,6 +14,7 @@ import com.wepayplugin.nfcstd.WepayPlugin;
 import org.esec.mcg.androidu2fsimulator.token.impl.LocalU2FToken;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
+import org.esec.mcg.androidu2fsimulator.token.msg.ErrorResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RawMessageCodec;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
@@ -21,9 +22,10 @@ import org.esec.mcg.androidu2fsimulator.token.msg.U2FTokenIntentType;
 import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.json.JSONObject;
 
+import java.lang.ref.WeakReference;
 import java.util.Random;
 
-public class U2FTokenActivity extends AppCompatActivity {
+public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnTokenTaskFinishListener {
 
     public static final String TEST_OF_PRESENCE_REQUIRED = "error:test-of-user-presence-required";
     public static final String INVALID_KEY_HANDLE = "error:bad-key-handle";
@@ -38,6 +40,9 @@ public class U2FTokenActivity extends AppCompatActivity {
     private U2FToken u2fToken;
     private static boolean USER_PRESENCE = false;
 
+    private RequestHandle requestHandle;
+    private ResponseHandler responseHandler;
+
 //    private static boolean USER_PRESENCE = true;
 
     @Override
@@ -46,8 +51,11 @@ public class U2FTokenActivity extends AppCompatActivity {
         LogUtils.d("onCreate");
         USER_PRESENCE = false;
 //        USER_PRESENCE = true;
-
+        responseHandler = new ResponseHandler(this);
         u2fToken = new LocalU2FToken(this);
+        if (u2fToken == null) {
+            LogUtils.e("u2fToken is null?");
+        }
         Intent intent = getIntent();
         Bundle data;
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
@@ -84,115 +92,127 @@ public class U2FTokenActivity extends AppCompatActivity {
             throw new RuntimeException("Illegal intent");
         }
 
+        // TODO: 2016/4/7 lock USER_PRESENCE
+//        userPresenceVerifier();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-
-        switch (u2fTokenIntentType) {
-            case U2F_OPERATION_REG:
-                register();
-                break;
-            case U2F_OPERATION_SIGN_BATCH:
-                sign();
-                break;
+        if (u2fToken == null) {
+            LogUtils.e("u2fToken is null?");
         }
+        TokenMessageRequest request = new TokenMessageRequest(registrationRequest,
+                signBatch, u2fTokenIntentType, u2fToken, responseHandler);
+
+        LogUtils.d("onResume: Thread: ID:" + Thread.currentThread().getId() + " Name:" + Thread.currentThread().getName());
+        new Thread(request).start();
+        requestHandle = new RequestHandle(request);
+
+
+
+//        switch (u2fTokenIntentType) {
+//            case U2F_OPERATION_REG:
+//                register();
+//                break;
+//            case U2F_OPERATION_SIGN_BATCH:
+//                sign();
+//                break;
+//        }
     }
 
-    private void register() {
-        if (signBatch != null) {
-            try {
-                LogUtils.d("check only");
-                if (signBatchIndex < signBatch.length) {
-                    LogUtils.d("for cycle");
-                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
-                }
-                signBatch = null;
-                // do register
-                register();
-
-            } catch (U2FTokenException e) {
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) { // token already registered
-                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
-                    setResult(RESULT_OK, i);
-                    LogUtils.d(TEST_OF_PRESENCE_REQUIRED);
-                    finish();
-                } else if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
-                    signBatchIndex++;
-                    register();
-                } else {
-                    e.printStackTrace();
-                    setResult(RESULT_CANCELED);
-                    finish();
-                }
-            }
-        } else { // do register
-
-            try {
-                if (USER_PRESENCE == false) {
-                    userPresenceVerifier();
-                    return;
-                }
-                RegistrationResponse registrationResponse = u2fToken.register(registrationRequest);
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                Bundle data = new Bundle();
-                data.putByteArray("RawMessage", RawMessageCodec.encodeRegistrationResponse(registrationResponse));
-                i.putExtras(data);
-                setResult(RESULT_OK, i);
-                finish();
-                USER_PRESENCE = false;
-            } catch (U2FTokenException e) {
-                // TODO: 2016/3/10 How to handle the exception?
-                throw new RuntimeException("this should not happen.");
-            }
-        }
-    }
-
-    private void sign() {
-        if (!USER_PRESENCE) {
-            userPresenceVerifier();
-        }
-
-        if (signBatch != null && USER_PRESENCE) {
-            try {
-                if (signBatchIndex < signBatch.length) {
-                    LogUtils.d(signBatchIndex);
-                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
-
-                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                    Bundle data = new Bundle();
-                    data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
-                    data.putInt("keyHandleIndex", signBatchIndex);
-//                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
-
-                    i.putExtras(data);
-                    setResult(RESULT_OK, i);
-                    finish();
-                    USER_PRESENCE = false;
-                    return;
-                }
-
-                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-                i.putExtra("SW", SW_INVALID_KEY_HANDLE);
-                setResult(RESULT_CANCELED, i);
-                finish();
-            } catch (U2FTokenException e) {
-                if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
-                    signBatchIndex++;
-                    sign();
-                } else {
-                    setResult(RESULT_CANCELED);
-                    finish();
-                    e.printStackTrace();
-                }
-
-            }
-
-        }
-    }
+//    private void register() {
+//        if (signBatch != null) {
+//            try {
+//                LogUtils.d("check only");
+//                if (signBatchIndex < signBatch.length) {
+//                    LogUtils.d("for cycle");
+//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
+//                }
+//                signBatch = null;
+//                // do register
+//                register();
+//
+//            } catch (U2FTokenException e) {
+//                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+//                if (e.getMessage().equals(TEST_OF_PRESENCE_REQUIRED)) { // token already registered
+//                    i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
+//                    setResult(RESULT_OK, i);
+//                    LogUtils.d(TEST_OF_PRESENCE_REQUIRED);
+//                    finish();
+//                } else if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
+//                    signBatchIndex++;
+//                    register();
+//                } else {
+//                    e.printStackTrace();
+//                    setResult(RESULT_CANCELED);
+//                    finish();
+//                }
+//            }
+//        } else { // do register
+//
+//            try {
+//                if (USER_PRESENCE == false) {
+//                    userPresenceVerifier();
+//                    return;
+//                }
+//                RegistrationResponse registrationResponse = u2fToken.register(registrationRequest);
+//                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+//                Bundle data = new Bundle();
+//                data.putByteArray("RawMessage", RawMessageCodec.encodeRegistrationResponse(registrationResponse));
+//                i.putExtras(data);
+//                setResult(RESULT_OK, i);
+//                finish();
+//                USER_PRESENCE = false;
+//            } catch (U2FTokenException e) {
+//                // TODO: 2016/3/10 How to handle the exception?
+//                throw new RuntimeException("this should not happen.");
+//            }
+//        }
+//    }
+//
+//    private void sign() {
+//        if (!USER_PRESENCE) {
+//            userPresenceVerifier();
+//        }
+//
+//        if (signBatch != null && USER_PRESENCE) {
+//            try {
+//                if (signBatchIndex < signBatch.length) {
+//                    LogUtils.d(signBatchIndex);
+//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
+//
+//                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+//                    Bundle data = new Bundle();
+//                    data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
+//                    data.putInt("keyHandleIndex", signBatchIndex);
+////                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
+//
+//                    i.putExtras(data);
+//                    setResult(RESULT_OK, i);
+//                    finish();
+//                    USER_PRESENCE = false;
+//                    return;
+//                }
+//
+//                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+//                i.putExtra("SW", SW_INVALID_KEY_HANDLE);
+//                setResult(RESULT_CANCELED, i);
+//                finish();
+//            } catch (U2FTokenException e) {
+//                if (e.getMessage().equals(INVALID_KEY_HANDLE)) {
+//                    signBatchIndex++;
+//                    sign();
+//                } else {
+//                    setResult(RESULT_CANCELED);
+//                    finish();
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//
+//        }
+//    }
 
     private void userPresenceVerifier() {
         // user presence with bank card
@@ -324,5 +344,69 @@ public class U2FTokenActivity extends AppCompatActivity {
             s += arr[ra.nextInt(arrLen)];
         }
         return s;
+    }
+
+    @Override
+    public void onTokenTaskSuccess() {
+
+    }
+
+    @Override
+    public void onTokenTaskFail() {
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!requestHandle.isCancelled() && !requestHandle.isFinished()) {
+            LogUtils.d("Reqeust Handle cancel" + (requestHandle.cancel(true) ? " succeeded" : " failed"));
+        } else {
+            LogUtils.d("Request Handle already non-cancellable");
+        }
+    }
+
+    private static class ResponseHandler implements ResponseHandlerInterface {
+        private final WeakReference<U2FTokenActivity> activity;
+        public ResponseHandler(U2FTokenActivity activity) {
+            this.activity = new WeakReference<U2FTokenActivity>(activity);
+        }
+
+        @Override
+        public void sendStartMessage() {
+            LogUtils.d("sendStartMessage");
+        }
+
+        @Override
+        public void onCheckOnlyFinish() { // Token has already been registered
+            LogUtils.d("onCheckOnlyFinish");
+            final U2FTokenActivity _activity = activity.get();
+            if (_activity != null) {
+                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
+                _activity.setResult(RESULT_OK, i);
+                _activity.finish();
+            }
+        }
+
+        @Override
+        public void onRegisterFinish(RegistrationResponse response) {
+            LogUtils.d("onRegisterFinish");
+            final U2FTokenActivity _activity = activity.get();
+            if (_activity != null) {
+                Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+                Bundle data = new Bundle();
+                data.putByteArray("RawMessage", RawMessageCodec.encodeRegistrationResponse(response));
+                i.putExtras(data);
+                _activity.setResult(RESULT_OK, i);
+                _activity.finish();
+                USER_PRESENCE = false;
+            }
+        }
+
+        @Override
+        public void sendCancelMessage() {
+            LogUtils.d("sendCancelMessage");
+        }
     }
 }

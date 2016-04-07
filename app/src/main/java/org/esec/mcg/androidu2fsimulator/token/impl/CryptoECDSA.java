@@ -30,18 +30,18 @@ public class CryptoECDSA implements Crypto {
     }
 
     @Override
-    public byte[] sign(byte[] signedData, PrivateKey certificatePrivateKey) throws U2FTokenException {
+    public byte[] sign(byte[] signedData, PrivateKey certificatePrivateKey) {
         try {
             Signature signature = Signature.getInstance("SHA256withECDSA");
             signature.initSign(certificatePrivateKey);
             signature.update(signedData);
             return signature.sign();
         } catch (NoSuchAlgorithmException e) {
-            throw new U2FTokenException("Error when signing", e);
+            throw new RuntimeException(e);
         } catch (SignatureException e) {
-            throw new U2FTokenException("Error when signing", e);
+            throw new RuntimeException(e);
         } catch (InvalidKeyException e) {
-            throw new U2FTokenException("Error when signing", e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -56,11 +56,11 @@ public class CryptoECDSA implements Crypto {
             BCECPublicKey pbk = (BCECPublicKey) pub;        // Easier to get Q value from this
             System.arraycopy(pbk.getQ().getEncoded(), 0, publicKey, 0, 65);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         } catch (NoSuchProviderException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return publicKey;
     }

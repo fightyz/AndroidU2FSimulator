@@ -3,12 +3,8 @@ package org.esec.mcg.androidu2fsimulator.token.impl;
 import android.util.Base64;
 
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
-import org.esec.mcg.androidu2fsimulator.token.U2FToken;
-import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
-import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.CharUtil;
-import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -20,7 +16,6 @@ import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.spongycastle.jce.spec.ECPrivateKeySpec;
 import org.spongycastle.math.ec.ECCurve;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -28,7 +23,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -36,7 +30,6 @@ import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
-import java.security.cert.CertificateException;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.EllipticCurve;
@@ -155,12 +148,12 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
     }
 
     @Override
-    public byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256) throws U2FTokenException {
+    public byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256) {
         return new byte[0];
     }
 
     @Override
-    public PrivateKey getUserPrivateKey(String keyHandle) throws U2FTokenException {
+    public PrivateKey getUserPrivateKey(String keyHandle) {
 
         ECNamedCurveParameterSpec params = ECNamedCurveTable.getParameterSpec("secp256r1");
         KeyFactory kf = null;

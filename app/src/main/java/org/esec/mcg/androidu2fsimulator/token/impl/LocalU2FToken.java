@@ -15,6 +15,8 @@ import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.esec.mcg.androidu2fsimulator.token.UserPresenceVerifier;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
+import org.esec.mcg.androidu2fsimulator.token.msg.BaseResponse;
+import org.esec.mcg.androidu2fsimulator.token.msg.ErrorResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RawMessageCodec;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
@@ -64,7 +66,7 @@ public class LocalU2FToken implements U2FToken {
     }
 
     @Override
-    public RegistrationResponse register(RegistrationRequest registrationRequest) throws U2FTokenException {
+    public BaseResponse register(RegistrationRequest registrationRequest) {
         byte[] applicationSha256 = registrationRequest.getApplicationSha256();
         byte[] challengeSha256 = registrationRequest.getChallengeSha256();
 
@@ -86,7 +88,7 @@ public class LocalU2FToken implements U2FToken {
 
 
     @Override
-    public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) throws U2FTokenException {
+    public BaseResponse authenticate(AuthenticationRequest authenticationRequest) {
         byte[] applicationSha256 = authenticationRequest.getApplicationSha256();
         byte[] challengeSha256 = authenticationRequest.getChallengeSha256();
         byte[] keyHandle = authenticationRequest.getKeyHandle();
@@ -96,7 +98,8 @@ public class LocalU2FToken implements U2FToken {
             LogUtils.d("authenticate key handle: " + ByteUtil.ByteArrayToHexString(keyHandle));
             PrivateKey privateKey = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
             if (privateKey == null) {
-                throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
+//                throw new U2FTokenException(U2FTokenActivity.SW_INVALID_KEY_HANDLE);
+                return new ErrorResponse(U2FTokenActivity.SW_INVALID_KEY_HANDLE);
             }
             LogUtils.d("privateKey: " + ByteUtil.ByteArrayToHexString(privateKey.getEncoded()));
             // TODO: 2016/3/8 counter should be stored safely
@@ -114,13 +117,15 @@ public class LocalU2FToken implements U2FToken {
         } else if (control == AuthenticationRequest.CHECK_ONLY) {
             PrivateKey prk = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
             if (prk != null) { // Reg: key handle had been registered
-                throw new U2FTokenException(U2FTokenActivity.TEST_OF_PRESENCE_REQUIRED);
+//                throw new U2FTokenException(U2FTokenActivity.SW_TEST_OF_PRESENCE_REQUIRED);
+                return new ErrorResponse(U2FTokenActivity.SW_TEST_OF_PRESENCE_REQUIRED);
             } else { // Reg: not found key handle
-                throw new U2FTokenException(U2FTokenActivity.INVALID_KEY_HANDLE);
+//                throw new U2FTokenException(U2FTokenActivity.SW_INVALID_KEY_HANDLE);
+                return new ErrorResponse(U2FTokenActivity.SW_INVALID_KEY_HANDLE);
             }
         } else {
-            throw new U2FTokenException("unsupported control byte");
+//            throw new U2FTokenException("unsupported control byte");
+            throw new RuntimeException("This should not happed.");
         }
-
     }
 }

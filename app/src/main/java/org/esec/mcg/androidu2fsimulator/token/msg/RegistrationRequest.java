@@ -80,7 +80,7 @@ public final class RegistrationRequest extends BaseRequest implements Parcelable
 
     @Override
     public String toString() {
-        return "AuthenticationRequest{" +
+        return "Registration{" +
                 "applicationSha256=" + ByteUtil.ByteArrayToHexString(applicationSha256) +
                 ", challengeSha256=" + ByteUtil.ByteArrayToHexString(challengeSha256) +
                 '}';

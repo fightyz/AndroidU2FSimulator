@@ -25,12 +25,12 @@ public class RawMessageCodec {
             inputStream.readFully(appIdSha256);
 
             if (inputStream.available() != 0) {
-                throw new U2FTokenException("Message ends with unexpected data");
+                throw new RuntimeException("Message ends with unexpected data");
             }
 
             return new RegistrationRequest(appIdSha256, challengeSha256);
         } catch (IOException e) {
-            throw new U2FTokenException("Error when parsing raw RegistrationRequest", e);
+            throw new RuntimeException("Error when parsing raw RegistrationRequest");
         }
     }
 
@@ -75,7 +75,7 @@ public class RawMessageCodec {
         return signedData;
     }
 
-    public static byte[] encodeRegistrationResponse(RegistrationResponse registrationResponse) throws U2FTokenException {
+    public static byte[] encodeRegistrationResponse(RegistrationResponse registrationResponse) {
         byte[] userPublicKey = registrationResponse.getUserPublicKey();
         byte[] keyHandle = registrationResponse.getKeyHandle();
         X509Certificate attestationCertificate = registrationResponse.getAttestationCertificate();
@@ -85,11 +85,11 @@ public class RawMessageCodec {
         try {
             attestationCertificateBytes = attestationCertificate.getEncoded();
         } catch (CertificateEncodingException e) {
-            throw new U2FTokenException("Error when encoding attestation certificate.", e);
+            throw new RuntimeException(e);
         }
 
         if (keyHandle.length > 255) {
-            throw new U2FTokenException("keyHandle length cannot be longer than 255 bytes!");
+            throw new RuntimeException("keyHandle length cannot be longer than 255 bytes!");
         }
 
         byte[] result = new byte[1 + userPublicKey.length + 1 + keyHandle.length
@@ -120,11 +120,11 @@ public class RawMessageCodec {
             inputStream.readFully(keyHandle);
 
             if (inputStream.available() != 0) {
-                throw new U2FTokenException("Message ends with unexpected data");
+                throw new RuntimeException("Message ends with unexpected data");
             }
             return new AuthenticationRequest(control, challengeSha256, appIdSha256, keyHandle);
         } catch (IOException e) {
-            throw new U2FTokenException("Error when parsing raw AuthenticationRequest", e);
+            throw new RuntimeException("Error when parsing raw RegistrationRequest");
         }
     }
 
