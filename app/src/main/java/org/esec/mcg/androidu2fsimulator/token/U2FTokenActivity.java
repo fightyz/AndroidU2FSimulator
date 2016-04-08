@@ -25,6 +25,11 @@ import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnTokenTaskFinishListener {
 
@@ -39,7 +44,9 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
     private int signBatchIndex;
 
     private U2FToken u2fToken;
-    private static boolean USER_PRESENCE = false;
+    public static boolean USER_PRESENCE = false;
+    public static Lock lock = new ReentrantLock();
+    public static Condition condition = lock.newCondition();
 
     private RequestHandle requestHandle;
     private ResponseHandler responseHandler;
@@ -51,7 +58,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
         super.onCreate(savedInstanceState);
         LogUtils.d("onCreate");
         USER_PRESENCE = false;
-//        USER_PRESENCE = true;
         responseHandler = new ResponseHandler(this);
         u2fToken = new LocalU2FToken(this);
         Intent intent = getIntent();
@@ -100,10 +106,15 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
         TokenMessageRequest request = new TokenMessageRequest(registrationRequest,
                 signBatch, u2fTokenIntentType, u2fToken, responseHandler);
 
-        LogUtils.d("onResume: Thread: ID:" + Thread.currentThread().getId() + " Name:" + Thread.currentThread().getName());
-        new Thread(request).start();
+//        new Thread(request).start();
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        exec.execute(request);
+        exec.shutdown();
         requestHandle = new RequestHandle(request);
 
+        if (!USER_PRESENCE) {
+            userPresenceVerifier();
+        }
 
 
 //        switch (u2fTokenIntentType) {
@@ -261,7 +272,14 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
                     if (mbundle.getInt("code") == REAULT_SUCCESS_CODE) {
                         Toast.makeText(this, " 余额查询成功", Toast.LENGTH_SHORT).show();
                         Log.i("Nfc-Query:", mbundle.getString("data"));
-                        USER_PRESENCE = true;
+                        lock.lock();
+                        try {
+                            USER_PRESENCE = true;
+                            condition.signalAll();
+                        } finally {
+                            lock.unlock();
+                        }
+
 
                     } else if (mbundle.getInt("code") == REAULT_ERROR_CODE) {
                         Toast.makeText(this, " 余额查询失败", Toast.LENGTH_SHORT).show();
@@ -269,7 +287,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
                         i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                         setResult(RESULT_CANCELED, i);
                         LogUtils.d("余额查询失败");
-                        USER_PRESENCE = false;
                         finish();
                     }
                     else if (mbundle.getInt("code") == REAULT_CANCEL_CODE) {
@@ -278,7 +295,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
                         i.putExtra("SW", SW_TEST_OF_PRESENCE_REQUIRED);
                         setResult(RESULT_CANCELED, i);
                         LogUtils.d("余额查询失败");
-                        USER_PRESENCE = false;
                         finish();
                     }
 
@@ -356,6 +372,13 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
         super.onDestroy();
         if (!requestHandle.isCancelled() && !requestHandle.isFinished()) {
             LogUtils.d("Reqeust Handle cancel" + (requestHandle.cancel(true) ? " succeeded" : " failed"));
+            lock.lock();
+            try {
+                USER_PRESENCE = true;
+                condition.signalAll();
+            } finally {
+                lock.unlock();
+            }
         } else {
             LogUtils.d("Request Handle already non-cancellable");
         }

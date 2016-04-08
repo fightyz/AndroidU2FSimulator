@@ -1,5 +1,7 @@
 package org.esec.mcg.androidu2fsimulator.token;
 
+import android.util.Log;
+
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.BaseResponse;
@@ -40,6 +42,8 @@ public class TokenMessageRequest implements Runnable{
 
     @Override
     public void run() {
+        LogUtils.d("Thread ID:" + Thread.currentThread().getId() + "" +
+                " Name: " + Thread.currentThread().getName());
         if (isCancelled()) {
             return;
         }
@@ -81,6 +85,25 @@ public class TokenMessageRequest implements Runnable{
                     return;
                 }
             }
+        }
+
+        U2FTokenActivity.lock.lock();
+        try {
+            while (U2FTokenActivity.USER_PRESENCE == false) {
+                try {
+                    LogUtils.d("Request wait");
+                    U2FTokenActivity.condition.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } finally {
+            U2FTokenActivity.lock.unlock();
+        }
+
+
+        if (isCancelled()) {
+            return;
         }
 
         RegistrationResponse response = (RegistrationResponse)u2fToken.register(registrationRequest);
