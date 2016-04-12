@@ -11,7 +11,6 @@ import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
 import org.esec.mcg.androidu2fsimulator.token.KeyPairGenerator;
 import org.esec.mcg.androidu2fsimulator.token.U2FToken;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
-import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.esec.mcg.androidu2fsimulator.token.UserPresenceVerifier;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;

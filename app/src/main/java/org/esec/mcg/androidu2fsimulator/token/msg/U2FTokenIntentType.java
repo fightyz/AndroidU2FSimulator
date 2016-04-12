@@ -5,6 +5,5 @@ package org.esec.mcg.androidu2fsimulator.token.msg;
  */
 public enum U2FTokenIntentType {
     U2F_OPERATION_REG,
-    U2F_OPERATION_SIGN,
     U2F_OPERATION_SIGN_BATCH
 }

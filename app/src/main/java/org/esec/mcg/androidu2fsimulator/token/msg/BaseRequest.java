@@ -3,7 +3,7 @@ package org.esec.mcg.androidu2fsimulator.token.msg;
 /**
  * Created by yz on 2016/3/28.
  */
-class BaseRequest {
+abstract class BaseRequest {
     protected byte[] challengeSha256;
     protected byte[] applicationSha256;
 

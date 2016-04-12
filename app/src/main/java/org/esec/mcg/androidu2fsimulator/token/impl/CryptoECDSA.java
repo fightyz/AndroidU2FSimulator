@@ -1,7 +1,6 @@
 package org.esec.mcg.androidu2fsimulator.token.impl;
 
 import org.esec.mcg.androidu2fsimulator.token.Crypto;
-import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 

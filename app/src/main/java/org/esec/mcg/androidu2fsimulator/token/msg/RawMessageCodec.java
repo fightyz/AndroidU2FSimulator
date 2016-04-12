@@ -1,10 +1,5 @@
 package org.esec.mcg.androidu2fsimulator.token.msg;
 
-import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
-
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -15,24 +10,6 @@ import java.security.cert.X509Certificate;
 public class RawMessageCodec {
     public static final byte REGISTRATION_RESERVED_BYTE_VALUE = 0x05;
     public static final byte REGISTRATION_SIGNED_RESERVED_BYTE_VALUE = 0x00;
-
-    public static RegistrationRequest decodeRegistrationRequest(byte[] data) throws U2FTokenException {
-        DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(data));
-        byte[] appIdSha256 = new byte[32];
-        byte[] challengeSha256 = new byte[32];
-        try {
-            inputStream.readFully(challengeSha256);
-            inputStream.readFully(appIdSha256);
-
-            if (inputStream.available() != 0) {
-                throw new RuntimeException("Message ends with unexpected data");
-            }
-
-            return new RegistrationRequest(appIdSha256, challengeSha256);
-        } catch (IOException e) {
-            throw new RuntimeException("Error when parsing raw RegistrationRequest");
-        }
-    }
 
     public static byte[] encodeRegistrationSignedBytes(byte[] applicationSha256,
                                                        byte[] challengeSha256,
@@ -56,11 +33,6 @@ public class RawMessageCodec {
         byte[] signedData = new byte[applicationSha256.length + 1 + 4 + challengeSha256.length];
         byte[] rawCounter = ByteBuffer.allocate(4).putInt(counter).array();
 
-//        ByteBuffer.wrap(signedData)
-//                .put(applicationSha256)
-//                .put(userPresence)
-//                .put(rawCounter)
-//                .put(challengeSha256);
         int cur = 0;
         System.arraycopy(applicationSha256, 0, signedData, cur, applicationSha256.length);
         cur += applicationSha256.length;
@@ -102,30 +74,6 @@ public class RawMessageCodec {
                 .put(attestationCertificateBytes)
                 .put(signature);
         return result;
-    }
-
-    public static AuthenticationRequest decodeAuthenticationRequest(byte[] data) throws U2FTokenException {
-        DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(data));
-        byte control;
-        byte[] challengeSha256 = new byte[32];
-        byte[] appIdSha256 = new byte[32];
-        byte keyHandleLength;
-        byte[] keyHandle;
-        try {
-            control = inputStream.readByte();
-            inputStream.readFully(challengeSha256);
-            inputStream.readFully(appIdSha256);
-            keyHandleLength = inputStream.readByte();
-            keyHandle = new byte[keyHandleLength & 0x00ff];
-            inputStream.readFully(keyHandle);
-
-            if (inputStream.available() != 0) {
-                throw new RuntimeException("Message ends with unexpected data");
-            }
-            return new AuthenticationRequest(control, challengeSha256, appIdSha256, keyHandle);
-        } catch (IOException e) {
-            throw new RuntimeException("Error when parsing raw RegistrationRequest");
-        }
     }
 
     public static byte[] encodeAuthenticationResponse(AuthenticationResponse authenticationResponse) {

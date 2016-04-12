@@ -11,20 +11,17 @@ import java.util.Objects;
 /**
  * Created by yz on 2016/3/7.
  */
-public class AuthenticationRequest implements Parcelable {
+public class AuthenticationRequest extends BaseRequest implements Parcelable {
     public static final byte CHECK_ONLY = 0x07;
     public static final byte USER_PRESENCE_SIGN = 0x03;
 
     private byte control;
-    private byte[] challengeSha256;
-    private byte[] applicationSha256;
     private byte[] keyHandle;
 
     public AuthenticationRequest(byte control, byte[] challengeSha256, byte[] applicationSha256,
                                  byte[] keyHandle) {
+        super(challengeSha256, applicationSha256);
         this.control = control;
-        this.challengeSha256 = challengeSha256;
-        this.applicationSha256 = applicationSha256;
         this.keyHandle = keyHandle;
     }
 

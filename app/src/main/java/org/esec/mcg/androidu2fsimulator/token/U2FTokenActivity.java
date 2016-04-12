@@ -2,11 +2,8 @@ package org.esec.mcg.androidu2fsimulator.token;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Looper;
-import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -15,7 +12,6 @@ import com.wepayplugin.nfcstd.WepayPlugin;
 import org.esec.mcg.androidu2fsimulator.token.impl.LocalU2FToken;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
-import org.esec.mcg.androidu2fsimulator.token.msg.ErrorResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RawMessageCodec;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
@@ -31,27 +27,22 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnTokenTaskFinishListener {
+public class U2FTokenActivity extends AppCompatActivity {
 
-    public static final String TEST_OF_PRESENCE_REQUIRED = "error:test-of-user-presence-required";
-    public static final String INVALID_KEY_HANDLE = "error:bad-key-handle";
     public static final int SW_TEST_OF_PRESENCE_REQUIRED = 0x6985;
     public static final int SW_INVALID_KEY_HANDLE = 0x6a80;
 
     private U2FTokenIntentType u2fTokenIntentType;
-    private AuthenticationRequest[] signBatch;
+    private AuthenticationRequest[] authenticationRequests;
     private RegistrationRequest registrationRequest;
-    private int signBatchIndex;
 
     private U2FToken u2fToken;
     public static boolean USER_PRESENCE = false;
-    public static Lock lock = new ReentrantLock();
+    public static final Lock lock = new ReentrantLock();
     public static Condition condition = lock.newCondition();
 
     private RequestHandle requestHandle;
     private ResponseHandler responseHandler;
-
-//    private static boolean USER_PRESENCE = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,12 +56,12 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH;
             Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
-            Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
+            Parcelable[] allParcelables = extras.getParcelableArray("authenticationRequests");
             if (allParcelables != null) {
-                signBatch = new AuthenticationRequest[allParcelables.length];
+                authenticationRequests = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
-                    signBatch[i] = (AuthenticationRequest)allParcelables[i];
-                    LogUtils.d("signBatch: " + signBatch[i]);
+                    authenticationRequests[i] = (AuthenticationRequest)allParcelables[i];
+                    LogUtils.d("authenticationRequests: " + authenticationRequests[i]);
                 }
             }
         }
@@ -81,14 +72,14 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
             registrationRequest = data.getParcelable("registerRequest");
             LogUtils.d(registrationRequest);
 //            rawMessage = data.getByteArray("RawMessage");
-            Parcelable[] allParcelables = data.getParcelableArray("signBatch");
+            Parcelable[] allParcelables = data.getParcelableArray("authenticationRequests");
             if (allParcelables != null) {
-                signBatch = new AuthenticationRequest[allParcelables.length];
+                authenticationRequests = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
-                    signBatch[i] = (AuthenticationRequest)allParcelables[i];
+                    authenticationRequests[i] = (AuthenticationRequest)allParcelables[i];
                 }
             } else {
-                LogUtils.d("signBatch is null");
+                LogUtils.d("authenticationRequests is null");
             }
         }
         else {
@@ -96,21 +87,19 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
             throw new RuntimeException("Illegal intent");
         }
 
-        // TODO: 2016/4/7 lock USER_PRESENCE
-//        userPresenceVerifier();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
         TokenMessageRequest request = new TokenMessageRequest(registrationRequest,
-                signBatch, u2fTokenIntentType, u2fToken, responseHandler);
+                authenticationRequests, u2fTokenIntentType, u2fToken, responseHandler);
 
 //        new Thread(request).start();
         ExecutorService exec = Executors.newSingleThreadExecutor();
         exec.execute(request);
         exec.shutdown();
         requestHandle = new RequestHandle(request);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
 
         if (!USER_PRESENCE) {
             userPresenceVerifier();
@@ -128,14 +117,14 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
     }
 
 //    private void register() {
-//        if (signBatch != null) {
+//        if (authenticationRequests != null) {
 //            try {
 //                LogUtils.d("check only");
-//                if (signBatchIndex < signBatch.length) {
+//                if (signBatchIndex < authenticationRequests.length) {
 //                    LogUtils.d("for cycle");
-//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
+//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(authenticationRequests[signBatchIndex]);
 //                }
-//                signBatch = null;
+//                authenticationRequests = null;
 //                // do register
 //                register();
 //
@@ -182,17 +171,17 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
 //            userPresenceVerifier();
 //        }
 //
-//        if (signBatch != null && USER_PRESENCE) {
+//        if (authenticationRequests != null && USER_PRESENCE) {
 //            try {
-//                if (signBatchIndex < signBatch.length) {
+//                if (signBatchIndex < authenticationRequests.length) {
 //                    LogUtils.d(signBatchIndex);
-//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(signBatch[signBatchIndex]);
+//                    AuthenticationResponse authenticationResponse = u2fToken.authenticate(authenticationRequests[signBatchIndex]);
 //
 //                    Intent i = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
 //                    Bundle data = new Bundle();
 //                    data.putByteArray("RawMessage", RawMessageCodec.encodeAuthenticationResponse(authenticationResponse));
 //                    data.putInt("keyHandleIndex", signBatchIndex);
-////                    data.putString("keyHandle", Base64.encodeToString(signBatch[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
+////                    data.putString("keyHandle", Base64.encodeToString(authenticationRequests[signBatchIndex].getKeyHandle(), Base64.URL_SAFE));
 //
 //                    i.putExtras(data);
 //                    setResult(RESULT_OK, i);
@@ -355,16 +344,6 @@ public class U2FTokenActivity extends AppCompatActivity implements TokenTask.OnT
             s += arr[ra.nextInt(arrLen)];
         }
         return s;
-    }
-
-    @Override
-    public void onTokenTaskSuccess() {
-
-    }
-
-    @Override
-    public void onTokenTaskFail() {
-
     }
 
     @Override

@@ -3,7 +3,6 @@ package org.esec.mcg.androidu2fsimulator.token.impl;
 import android.util.Base64;
 
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
-import org.esec.mcg.androidu2fsimulator.token.U2FTokenException;
 import org.esec.mcg.androidu2fsimulator.token.utils.CharUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -191,11 +190,6 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
             return null;
         }
 
-    }
-
-    @Override
-    public boolean checkKeyHandle(byte[] keyHandle) throws U2FTokenException {
-        return true;
     }
 
     /**

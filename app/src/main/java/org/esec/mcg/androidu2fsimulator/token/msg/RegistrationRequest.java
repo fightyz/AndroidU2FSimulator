@@ -63,7 +63,6 @@ public final class RegistrationRequest extends BaseRequest implements Parcelable
     public static final ClassLoaderCreator<RegistrationRequest> CREATOR = new ClassLoaderCreator<RegistrationRequest>() {
         @Override
         public RegistrationRequest createFromParcel(Parcel source, ClassLoader loader) {
-            LogUtils.d("I'm here!!");
             return new RegistrationRequest(source);
         }
 

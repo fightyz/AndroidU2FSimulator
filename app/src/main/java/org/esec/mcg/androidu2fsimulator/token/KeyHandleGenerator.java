@@ -19,5 +19,4 @@ public interface KeyHandleGenerator {
     byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk);
     byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256);
     PrivateKey getUserPrivateKey(String keyHandle);
-    boolean checkKeyHandle(byte[] keyHandle) throws U2FTokenException;
 }
