@@ -56,7 +56,7 @@ public class U2FTokenActivity extends AppCompatActivity {
         if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH;
             Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
-            Parcelable[] allParcelables = extras.getParcelableArray("authenticationRequests");
+            Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
             if (allParcelables != null) {
                 authenticationRequests = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
@@ -72,7 +72,7 @@ public class U2FTokenActivity extends AppCompatActivity {
             registrationRequest = data.getParcelable("registerRequest");
             LogUtils.d(registrationRequest);
 //            rawMessage = data.getByteArray("RawMessage");
-            Parcelable[] allParcelables = data.getParcelableArray("authenticationRequests");
+            Parcelable[] allParcelables = data.getParcelableArray("signBatch");
             if (allParcelables != null) {
                 authenticationRequests = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {

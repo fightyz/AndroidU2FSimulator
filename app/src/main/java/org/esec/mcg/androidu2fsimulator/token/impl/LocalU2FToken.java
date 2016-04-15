@@ -6,12 +6,10 @@ import android.util.Base64;
 import android.util.Log;
 
 import org.esec.mcg.androidu2fsimulator.token.Crypto;
-import org.esec.mcg.androidu2fsimulator.token.DataStore;
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
 import org.esec.mcg.androidu2fsimulator.token.KeyPairGenerator;
 import org.esec.mcg.androidu2fsimulator.token.U2FToken;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
-import org.esec.mcg.androidu2fsimulator.token.UserPresenceVerifier;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.BaseResponse;
@@ -21,21 +19,10 @@ import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
 import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
-import org.spongycastle.asn1.ASN1Sequence;
-import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 
-import java.io.IOException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.X509EncodedKeySpec;
 
 /**
  * Created by yz on 2016/1/14.
@@ -46,8 +33,6 @@ public class LocalU2FToken implements U2FToken {
     private final PrivateKey certificatePrivateKey;
     private final KeyPairGenerator keyPairGenerator;
     private final KeyHandleGenerator keyHandleGenerator;
-    private final DataStore dataStore;
-    private final UserPresenceVerifier userPresenceVerifier;
     private final Crypto crypto;
 
     private Context context;
@@ -58,8 +43,6 @@ public class LocalU2FToken implements U2FToken {
         keyPairGenerator = new SCSecp256r1();
 
         keyHandleGenerator = new KeyHandleGeneratorWithSC();
-        dataStore = null;
-        userPresenceVerifier = null;
         crypto = new CryptoECDSA();
         this.context = context;
     }

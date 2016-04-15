@@ -82,6 +82,7 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
 
     @Override
     public byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk) {
+
         try {
             String originHash = getDigest(applicationSha256, "SHA256");
             // Get wrapping key
@@ -324,4 +325,5 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
         byte[] digestbytes = digest.digest(input);
         return Base64.encodeToString(digestbytes, Base64.URL_SAFE);
     }
+
 }

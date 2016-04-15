@@ -29,10 +29,10 @@ public class CryptoECDSA implements Crypto {
     }
 
     @Override
-    public byte[] sign(byte[] signedData, PrivateKey certificatePrivateKey) {
+    public byte[] sign(byte[] signedData, PrivateKey prvKey) {
         try {
             Signature signature = Signature.getInstance("SHA256withECDSA");
-            signature.initSign(certificatePrivateKey);
+            signature.initSign(prvKey);
             signature.update(signedData);
             return signature.sign();
         } catch (NoSuchAlgorithmException e) {

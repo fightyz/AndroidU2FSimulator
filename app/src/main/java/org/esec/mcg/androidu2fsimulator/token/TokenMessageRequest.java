@@ -1,7 +1,5 @@
 package org.esec.mcg.androidu2fsimulator.token;
 
-import android.util.Log;
-
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.BaseResponse;
@@ -26,7 +24,6 @@ public class TokenMessageRequest implements Runnable{
     private final ResponseHandlerInterface responseHandler;
     private volatile boolean isFinished;
     private boolean cancelIsNotified;
-    private int authenticationRequestsIndex;
 
     public TokenMessageRequest(RegistrationRequest registrationRequest,
                                AuthenticationRequest[] authenticationRequests,
