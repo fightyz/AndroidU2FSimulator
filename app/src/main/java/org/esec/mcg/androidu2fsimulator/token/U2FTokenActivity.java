@@ -53,10 +53,9 @@ public class U2FTokenActivity extends AppCompatActivity {
         u2fToken = new LocalU2FToken(this);
         Intent intent = getIntent();
         Bundle data;
-        if (intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name()) != null) {
+        if ((data = intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name())) != null) {
             u2fTokenIntentType = U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH;
-            Bundle extras = getIntent().getBundleExtra(U2FTokenIntentType.U2F_OPERATION_SIGN_BATCH.name());
-            Parcelable[] allParcelables = extras.getParcelableArray("signBatch");
+            Parcelable[] allParcelables = data.getParcelableArray("signBatch");
             if (allParcelables != null) {
                 authenticationRequests = new AuthenticationRequest[allParcelables.length];
                 for (int i = 0; i < allParcelables.length; i++) {
