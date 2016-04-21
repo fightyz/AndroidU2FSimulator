@@ -1,5 +1,6 @@
 package org.esec.mcg.androidu2fsimulator.token;
 
+import android.app.ActivityManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -20,6 +21,8 @@ import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -279,6 +282,7 @@ public class U2FTokenActivity extends AppCompatActivity {
                 _activity.setResult(RESULT_OK, i);
                 _activity.finish();
             }
+            USER_PRESENCE = true;
         }
 
         @Override

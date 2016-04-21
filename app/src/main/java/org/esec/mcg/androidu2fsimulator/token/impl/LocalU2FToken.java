@@ -39,6 +39,7 @@ public class LocalU2FToken implements U2FToken {
         attestationCertificate = (X509Certificate) AttestationCertificate.getAttestationCertificate();
         certificatePrivateKey = AttestationCertificate.getAttestationPrivateKey();
 
+//        keyHandleGenerator = new KeyHandleGeneratorWithAES();
         keyHandleGenerator = new KeyHandleGeneratorWithSC();
         crypto = new CryptoECDSA();
         this.context = context;

@@ -82,6 +82,7 @@ public class TokenMessageRequest implements Runnable{
                     return;
                 }
             }
+            LogUtils.d("==================");
         }
 
         U2FTokenActivity.lock.lock();

@@ -25,7 +25,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat">
 
-        <activity android:name=".token.U2FTokenActivity">
+        <activity android:name=".token.U2FTokenActivity"
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="org.fidoalliance.intent.FIDO_OPERATION" />
 
