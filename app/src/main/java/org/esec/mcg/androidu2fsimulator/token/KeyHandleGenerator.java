@@ -17,6 +17,5 @@ import java.security.cert.CertificateException;
 public interface KeyHandleGenerator {
     KeyPair generateKeyPair();
     byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk);
-    byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256);
     PrivateKey getUserPrivateKey(String keyHandle);
 }

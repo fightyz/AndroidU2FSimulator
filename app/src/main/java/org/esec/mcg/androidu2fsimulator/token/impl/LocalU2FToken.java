@@ -7,7 +7,6 @@ import android.util.Log;
 
 import org.esec.mcg.androidu2fsimulator.token.Crypto;
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
-import org.esec.mcg.androidu2fsimulator.token.KeyPairGenerator;
 import org.esec.mcg.androidu2fsimulator.token.U2FToken;
 import org.esec.mcg.androidu2fsimulator.token.U2FTokenActivity;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
@@ -31,7 +30,6 @@ public class LocalU2FToken implements U2FToken {
 
     private final X509Certificate attestationCertificate;
     private final PrivateKey certificatePrivateKey;
-    private final KeyPairGenerator keyPairGenerator;
     private final KeyHandleGenerator keyHandleGenerator;
     private final Crypto crypto;
 
@@ -40,7 +38,6 @@ public class LocalU2FToken implements U2FToken {
     public LocalU2FToken(Context context) {
         attestationCertificate = (X509Certificate) AttestationCertificate.getAttestationCertificate();
         certificatePrivateKey = AttestationCertificate.getAttestationPrivateKey();
-        keyPairGenerator = new SCSecp256r1();
 
         keyHandleGenerator = new KeyHandleGeneratorWithSC();
         crypto = new CryptoECDSA();

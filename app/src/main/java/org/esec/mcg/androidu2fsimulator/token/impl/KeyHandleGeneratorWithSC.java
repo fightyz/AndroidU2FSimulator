@@ -1,9 +1,12 @@
 package org.esec.mcg.androidu2fsimulator.token.impl;
 
 import android.util.Base64;
+import android.util.Log;
 
 import org.esec.mcg.androidu2fsimulator.token.KeyHandleGenerator;
+import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.CharUtil;
+import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -61,6 +64,7 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
         if (Security.getProvider("SC") == null) {
             Security.insertProviderAt(new BouncyCastleProvider(), 1);
         }
+//        System.loadLibrary("TWBDES");
     }
 
     public KeyPair generateKeyPair() {
@@ -84,6 +88,7 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
     public byte[] generateKeyHandle(byte[] applicationSha256, PrivateKey pvk) {
 
         try {
+
             String originHash = getDigest(applicationSha256, "SHA256");
             // Get wrapping key
             byte[] Seckeybytes = CharUtil.decodeHex(FIXED_AES256_WRAPPING_KEY.toCharArray());
@@ -144,11 +149,6 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
         }
 
 
-        return new byte[0];
-    }
-
-    @Override
-    public byte[] generateKeyHandle(byte[] applicationSha256, byte[] challengeSha256) {
         return new byte[0];
     }
 
@@ -326,4 +326,5 @@ public class KeyHandleGeneratorWithSC implements KeyHandleGenerator {
         return Base64.encodeToString(digestbytes, Base64.URL_SAFE);
     }
 
+//    public static native byte[] TDESEncryptBlock(byte[] in,boolean isEncript);
 }
