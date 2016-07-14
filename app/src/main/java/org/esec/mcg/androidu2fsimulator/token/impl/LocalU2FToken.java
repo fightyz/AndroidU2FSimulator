@@ -1,5 +1,6 @@
 package org.esec.mcg.androidu2fsimulator.token.impl;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
@@ -16,9 +17,13 @@ import org.esec.mcg.androidu2fsimulator.token.msg.ErrorResponse;
 import org.esec.mcg.androidu2fsimulator.token.msg.RawMessageCodec;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.RegistrationResponse;
+import org.esec.mcg.androidu2fsimulator.token.secure.preference.core.KeyStoreKeyGenerator;
+import org.esec.mcg.androidu2fsimulator.token.secure.preference.core.ObscuredPreferencesBuilder;
 import org.esec.mcg.androidu2fsimulator.token.utils.ByteUtil;
 import org.esec.mcg.androidu2fsimulator.token.utils.logger.LogUtils;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -83,16 +88,40 @@ public class LocalU2FToken implements U2FToken {
             }
             LogUtils.d("privateKey: " + ByteUtil.ByteArrayToHexString(privateKey.getEncoded()));
             // TODO: 2016/3/8 counter should be stored safely
-            SharedPreferences sharedPreferences = context.getSharedPreferences("org.esec.mcg.android.fido.PREFERENCE_FILE_KEY"
-                    .concat(".").concat(Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10)), Context.MODE_PRIVATE);
-            int counter = sharedPreferences.getInt("Counter", 1);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putInt("Counter", counter + 1);
-            editor.commit();
+//            SharedPreferences sharedPreferences = context.getSharedPreferences("org.esec.mcg.android.fido.PREFERENCE_FILE_KEY"
+//                    .concat(".").concat(Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10)), Context.MODE_PRIVATE);
+//            int counter = sharedPreferences.getInt("Counter", 1);
+//            SharedPreferences.Editor editor = sharedPreferences.edit();
+//            editor.putInt("Counter", counter + 1);
+//            editor.commit();
+            int counter;
+            try {
+                String key = KeyStoreKeyGenerator.get(((U2FTokenActivity) context).getApplication(), context.getPackageName())
+                        .loadOrGenerateKeys();
+
+                SharedPreferences sharedPreferences = new ObscuredPreferencesBuilder()
+                        .setApplication(((U2FTokenActivity) context).getApplication())
+                        .obfuscateKey(true)
+                        .obfuscateValue(true)
+                        .setSharePrefFileName("org.esec.mcg.android.fido.PREFERENCE_FILE_KEY"
+                                .concat(".").concat(Base64.encodeToString(keyHandle, Base64.NO_WRAP | Base64.URL_SAFE).substring(keyHandle.length - 10)))
+                        .setSecret(key)
+                        .createSharedPrefs();
+                counter = sharedPreferences.getInt("counter", 1);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putInt("counter", counter + 1);
+                editor.commit();
+            } catch (GeneralSecurityException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
             byte[] signedData = RawMessageCodec.encodeAuthenticationSignedBytes(applicationSha256, (byte)0x01, counter, challengeSha256);
 
             byte[] signature = crypto.sign(signedData, privateKey);
-            Log.d("Counter", ""+counter);
+            Log.d("counter", ""+counter);
             return new AuthenticationResponse((byte)0x01, counter, signature);
         } else if (control == AuthenticationRequest.CHECK_ONLY) {
             PrivateKey prk = keyHandleGenerator.getUserPrivateKey(Base64.encodeToString(keyHandle, Base64.URL_SAFE));
