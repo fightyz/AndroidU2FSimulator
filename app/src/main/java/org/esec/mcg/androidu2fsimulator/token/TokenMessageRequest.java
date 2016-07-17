@@ -16,13 +16,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class TokenMessageRequest implements Runnable{
 
+    /**
+     * 用于判断该任务是否被取消
+     */
     private final AtomicBoolean isCancelled = new AtomicBoolean();
     private final U2FTokenIntentType u2fTokenIntentType;
+    /**
+     * 认证请求
+     */
     private final AuthenticationRequest[] authenticationRequests;
+    /**
+     * 注册请求
+     */
     private final RegistrationRequest registrationRequest;
     private U2FToken u2fToken;
+    /**
+     * 回调接口
+     */
     private final ResponseHandlerInterface responseHandler;
+    /**
+     * 任务是否已完成
+     */
     private volatile boolean isFinished;
+    /**
+     * 取消的回调信息已经发送
+     */
     private boolean cancelIsNotified;
 
     public TokenMessageRequest(RegistrationRequest registrationRequest,
@@ -85,21 +103,31 @@ public class TokenMessageRequest implements Runnable{
             LogUtils.d("==================");
         }
 
-        U2FTokenActivity.lock.lock();
-        try {
-            while (U2FTokenActivity.USER_PRESENCE == false) {
+//        U2FTokenActivity.lock.lock();
+//        try {
+//            while (U2FTokenActivity.USER_PRESENCE == false) {
+//                try {
+//                    LogUtils.d("Request wait");
+//                    U2FTokenActivity.condition.await();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        } finally {
+//            U2FTokenActivity.lock.unlock();
+//        }
+        synchronized (U2FTokenActivity.lock) {
+            while(U2FTokenActivity.USER_PRESENCE == false) {
+                LogUtils.d("Request wait");
                 try {
-                    LogUtils.d("Request wait");
-                    U2FTokenActivity.condition.await();
+                    U2FTokenActivity.lock.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
             }
-        } finally {
-            U2FTokenActivity.lock.unlock();
         }
-
-
+        
         if (isCancelled()) {
             return;
         }

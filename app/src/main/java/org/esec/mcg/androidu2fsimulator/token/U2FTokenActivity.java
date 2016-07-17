@@ -41,8 +41,9 @@ public class U2FTokenActivity extends AppCompatActivity {
 
     private U2FToken u2fToken;
     public static boolean USER_PRESENCE = false;
-    public static final Lock lock = new ReentrantLock();
-    public static Condition condition = lock.newCondition();
+//    public static final Lock lock = new ReentrantLock();
+//    public static Condition condition = lock.newCondition();
+    static Object lock = new Object();
 
     private RequestHandle requestHandle;
     private ResponseHandler responseHandler;
@@ -159,12 +160,16 @@ public class U2FTokenActivity extends AppCompatActivity {
                     if (mbundle.getInt("code") == REAULT_SUCCESS_CODE) {
                         Toast.makeText(this, " 余额查询成功", Toast.LENGTH_SHORT).show();
                         Log.i("Nfc-Query:", mbundle.getString("data"));
-                        lock.lock();
-                        try {
+//                        lock.lock();
+//                        try {
+//                            USER_PRESENCE = true;
+//                            condition.signalAll();
+//                        } finally {
+//                            lock.unlock();
+//                        }
+                        synchronized (lock) {
                             USER_PRESENCE = true;
-                            condition.signalAll();
-                        } finally {
-                            lock.unlock();
+                            lock.notify();
                         }
 
 
@@ -249,12 +254,16 @@ public class U2FTokenActivity extends AppCompatActivity {
         super.onDestroy();
         if (!requestHandle.isCancelled() && !requestHandle.isFinished()) {
             LogUtils.d("Reqeust Handle cancel" + (requestHandle.cancel(true) ? " succeeded" : " failed"));
-            lock.lock();
-            try {
+//            lock.lock();
+//            try {
+//                USER_PRESENCE = true;
+//                condition.signalAll();
+//            } finally {
+//                lock.unlock();
+//            }
+            synchronized (lock) {
                 USER_PRESENCE = true;
-                condition.signalAll();
-            } finally {
-                lock.unlock();
+                lock.notify();
             }
         } else {
             LogUtils.d("Request Handle already non-cancellable");
