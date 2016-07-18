@@ -116,9 +116,14 @@ public class TokenMessageRequest implements Runnable{
 //        } finally {
 //            U2FTokenActivity.lock.unlock();
 //        }
+        synchronized (U2FTokenActivity.userPresenceLock) {
+            U2FTokenActivity.CHECKONLY_FINISHED = true;
+            U2FTokenActivity.userPresenceLock.notify();
+        }
+
         synchronized (U2FTokenActivity.lock) {
             while(U2FTokenActivity.USER_PRESENCE == false) {
-                LogUtils.d("Request wait");
+                LogUtils.e("Request wait");
                 try {
                     U2FTokenActivity.lock.wait();
                 } catch (InterruptedException e) {
@@ -142,6 +147,11 @@ public class TokenMessageRequest implements Runnable{
     }
 
     private void sign() {
+        synchronized (U2FTokenActivity.userPresenceLock) {
+            U2FTokenActivity.CHECKONLY_FINISHED = true;
+            U2FTokenActivity.userPresenceLock.notify();
+        }
+
         for (int index = 0; index < authenticationRequests.length; index++) {
             BaseResponse response = u2fToken.authenticate(authenticationRequests[index]);
             if (response instanceof ErrorResponse) {

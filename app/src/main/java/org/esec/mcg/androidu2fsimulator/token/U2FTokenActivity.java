@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.wepayplugin.nfcstd.WepayPlugin;
 
+import org.esec.mcg.androidu2fsimulator.R;
 import org.esec.mcg.androidu2fsimulator.token.impl.LocalU2FToken;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationRequest;
 import org.esec.mcg.androidu2fsimulator.token.msg.AuthenticationResponse;
@@ -44,6 +46,9 @@ public class U2FTokenActivity extends AppCompatActivity {
 //    public static final Lock lock = new ReentrantLock();
 //    public static Condition condition = lock.newCondition();
     static Object lock = new Object();
+    static Object userPresenceLock = new Object();
+    static boolean CHECKONLY_FINISHED = false;
+    boolean illegal_intent = true;
 
     private RequestHandle requestHandle;
     private ResponseHandler responseHandler;
@@ -51,7 +56,9 @@ public class U2FTokenActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_u2f_token);
         USER_PRESENCE = false;
+        CHECKONLY_FINISHED = false;
         responseHandler = new ResponseHandler(this);
         u2fToken = new LocalU2FToken(this);
         Intent intent = getIntent();
@@ -66,6 +73,9 @@ public class U2FTokenActivity extends AppCompatActivity {
                     LogUtils.d("authenticationRequests: " + authenticationRequests[i]);
                 }
             }
+            illegal_intent = false;
+            TextView tv = (TextView) findViewById(R.id.msg);
+            tv.setText("processing...");
         }
         else if ((data = intent.getBundleExtra(U2FTokenIntentType.U2F_OPERATION_REG.name())) != null) {
             LogUtils.d("this is reg");
@@ -83,10 +93,14 @@ public class U2FTokenActivity extends AppCompatActivity {
             } else {
                 LogUtils.d("authenticationRequests is null");
             }
-        }
-        else {
-            // TODO: 2016/3/28 erroe message layout
-            throw new RuntimeException("Illegal intent");
+            illegal_intent = false;
+            TextView tv = (TextView) findViewById(R.id.msg);
+            tv.setText("processing...");
+        } else {
+            TextView tv = (TextView) findViewById(R.id.msg);
+            tv.setText("illegal intent");
+            illegal_intent = true;
+            return;
         }
 
         TokenMessageRequest request = new TokenMessageRequest(registrationRequest,
@@ -103,9 +117,22 @@ public class U2FTokenActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (!USER_PRESENCE) {
-            userPresenceVerifier();
+        if (!illegal_intent) {
+            synchronized (userPresenceLock) {
+                if (CHECKONLY_FINISHED == false) {
+                    try {
+                        userPresenceLock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            if (!USER_PRESENCE) {
+                userPresenceVerifier();
+            }
         }
+
     }
 
     private void userPresenceVerifier() {
@@ -252,7 +279,7 @@ public class U2FTokenActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (!requestHandle.isCancelled() && !requestHandle.isFinished()) {
+        if (requestHandle != null && !requestHandle.isCancelled() && !requestHandle.isFinished()) {
             LogUtils.d("Reqeust Handle cancel" + (requestHandle.cancel(true) ? " succeeded" : " failed"));
 //            lock.lock();
 //            try {
@@ -292,6 +319,11 @@ public class U2FTokenActivity extends AppCompatActivity {
                 _activity.finish();
             }
             USER_PRESENCE = true;
+            synchronized (userPresenceLock) {
+                CHECKONLY_FINISHED = true;
+                userPresenceLock.notify();
+            }
+
         }
 
         @Override
