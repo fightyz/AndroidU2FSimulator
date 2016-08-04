@@ -76,6 +76,7 @@ public class KeyHandleGeneratorWithSC extends KeyHandleGenerator {
         }
     }
 
+    // 不足8的倍数位，就用remaining填充
     private static byte[] paddingWithPKCS5(byte[] data) {
         int mod = data.length % 8;
         int remaining = 8 - mod;
@@ -87,6 +88,7 @@ public class KeyHandleGeneratorWithSC extends KeyHandleGenerator {
         return result;
     }
 
+    // 最后一位表示的肯定是填充位数，去掉填充位数
     private static byte[] unpaddingWithPKCS5(byte[] data) {
         int remaining = data[data.length - 1];
         LogUtils.d(ByteUtil.ByteArrayToHexString(data));
